@@ -1,0 +1,209 @@
+/*
+@name			Dark BitClout
+@namespace		chapel
+@version		1.0.3
+@description	A dark theme for BitClout.
+@author			chapel
+@license		MIT
+@homepageURL	https://github.com/chapel/bitclout-darkmode/
+@supportURL		https://github.com/chapel/bitclout-darkmode/issues
+@updateURL		https://raw.githubusercontent.com/chapel/bitclout-darkmode/master/bitclout-dark.user.css
+*/
+body,
+.global__container > *,
+.form-control,
+.form-control:focus,
+.search-bar__results-dropdown,
+.sign-up__cp-button-override,
+.left-bar-mobile__flyout-div,
+.modal-content {
+    background-color: #0d0d0d !important;
+}
+
+.buy-bitclout__box-label-adjustment {
+    background-color: #0d0d0d !important;
+}
+
+.global__container *,
+.form-control:focus,
+.close,
+body {
+    color: #fff !important;
+}
+
+.border-color-grey,
+.global__center__inner,
+.global__content__inner.global__content__inner,
+.form-control,
+.form-control:focus,
+.input-group-text,
+.post-thread__comment-container,
+textarea,
+.search-bar__results-dropdown,
+.messages-inbox__desktop-column,
+.messages-thread__desktop-column,
+.modal-header {
+    border-color: #202020 !important;
+}
+
+.border-bottom,
+.border,
+.border-top,
+.modal-content textarea {
+    border-color: #202020 !important;
+}
+
+.global__top-bar,
+.fixed-top-bar.border-bottom {
+    border-bottom: 1px solid #0d0d0d !important;
+}
+
+@media (max-width: 991.98px) {
+    .search-bar__icon {
+        border-color: #0d0d0d !important;
+    }
+}
+
+.global__top-bar,
+.light-grey-divider,
+.feed-post-icon-row__icon:hover,
+.change-account-selector__hover:hover,
+.feed-post__coin-price-holder,
+.change-account-selector,
+.right-bar-creators__balance-box,
+.search-bar__selected-color,
+.holdings__divider,
+.background-color-light-grey,
+.background-color-grey,
+.sign-up__grey-background,
+.global__bottom-bar-mobile,
+.background-color-white,
+.fixed-top-bar,
+.modal-header,
+.dropdown-menu {
+    background-color: #202020 !important;
+}
+
+.bg-light {
+    background-color: #202020 !important;
+}
+
+.search-bar__fix-active {
+    border-left-color: rgba(0, 0, 0, 0) !important;
+}
+
+.fc-muted,
+.fa-clock,
+.feed-post__icon-row-holder *,
+.explorer-container pre {
+    color: #aaa !important;
+}
+
+.feed-post__blue-border,
+.tab-underline-active {
+    border-color: #256fef !important;
+}
+
+.fc-red,
+.icon-heart-fill,
+.dropdown-menu .text-danger * {
+    color: #fe3537 !important;
+}
+
+.fa-check-circle {
+    color: #256fef !important;
+}
+
+.btn-outline-primary {
+    border-color: #5a88d7 !important;
+}
+
+.global__container a,
+a .fc-muted,
+.feed-post__coin-price-holder,
+.left-bar__dot-active,
+.btn-outline-primary,
+.explorer-container a {
+    color: #5a88d7 !important;
+}
+
+.global__nav__inner a,
+.text-grey5 .link--unstyled {
+    color: #aaa !important;
+}
+
+a.link--unstyled > a,
+a.link--unstyled,
+.creators-leaderboard__controls-column a,
+.fc-default {
+    color: #fff !important;
+}
+
+a:hover,
+a .fc-muted:hover,
+.feed-post__coin-price-holder:hover,
+.global__nav__inner a:hover,
+a.link--unstyled:hover,
+a.link--unstyled:hover > a,
+.global__sidebar__inner a.link--unstyled:hover span,
+.btn-outline-primary:hover,
+a.holdings__creator-coin-name:hover *,
+.close:hover,
+.explorer-container a:hover {
+    color: #256fef !important;
+}
+
+.feed-post__container {
+    color: white !important;
+}
+
+.file-upload-button:hover + .btn-outline-primary.btn-outline-primary,
+.btn-outline-primary:hover {
+    color: #fff !important;
+    background-color: #256fef !important;
+}
+
+.left-bar__dot-active {
+    color: #5a88d7 !important;
+}
+
+a.left-bar__dot-inactive {
+    color: transparent !important;
+}
+
+a.btn-primary,
+button.btn-primary {
+    color: #fff !important;
+    background-color: #256fef !important;
+    border-color: #256fef !important;
+}
+
+.fc-muted span {
+    color: white !important;
+}
+
+.sign-up__cp-button-override {
+    color: #fff !important;
+    border-color: #fff !important;
+}
+
+.messages-inbox__selected-thread {
+    background-color: inherit !important;
+    border-right-color: #5a88d7 !important;
+}
+
+.spinner-border {
+    width: 1rem !important;
+    height: 1rem !important;
+    margin-left: 50% !important;
+}
+
+.holdings__name {
+    max-width: 175px !important;
+}
+
+/* Added by paulburke */
+
+left-bar img {
+    filter: invert(1.0);
+}
