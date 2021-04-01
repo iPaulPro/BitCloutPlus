@@ -117,7 +117,7 @@ const addHolderPercentages = function (profileDetails) {
   } catch (e) {}
 }
 
-const addHolderPositions = function (profileDetails) {
+const addHolderRankings = function (profileDetails) {
   if (!profileDetails) return
 
   const holderPositionClassName = 'plus-profile-holder-position'
@@ -154,7 +154,7 @@ const enrichProfile = function () {
 
   addHolderPercentages(profileDetails)
 
-  addHolderPositions(profileDetails)
+  addHolderRankings(profileDetails)
 }
 
 const enrichWallet = function () {

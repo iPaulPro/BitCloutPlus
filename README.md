@@ -8,6 +8,7 @@ Chrome / Brave extension to enhance bitclout.com pages
 - Shows coin price in BTCLT
 - Shows number of holders
 - Shows percentage of coins held for each holder
+- Shows positional ranking of coin holders
 
 #### Buy
 - Shows founder fee percentage in buy screen
