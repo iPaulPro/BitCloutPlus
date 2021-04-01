@@ -1,16 +1,18 @@
+// Copyright Paul Burke 2021. All Rights Reserved.
+// Github: @ipaulpro/bitcloutplus
+// This file is licensed under the MIT License.
+// License text available at https://opensource.org/licenses/MIT
+
 const getSpotPrice = function () {
   const elementList = document.getElementsByClassName('right-bar-creators__balance-box')
 
   try {
     const priceContainerDiv = elementList.item(0).firstElementChild
     const priceDiv = priceContainerDiv.children.item(1)
-    // const price = parseFloat(priceDiv.slice(2, priceDiv.length))
     const price = parseFloat(priceDiv.innerHTML.replace(/[^0-9\.]+/g, ''))
 
     return price
-  } catch (e) {
-    // eat it
-  }
+  } catch (e) {}
 
   return 0
 }
@@ -35,9 +37,7 @@ const addNativeCoinPrice = function () {
     span.style.fontWeight = '500'
     span.innerText = `(${nativePrice} BTCLT)`
     coinPriceDiv.insertBefore(span, coinPriceDiv.lastElementChild)
-  } catch (e) {
-    // eat it
-  }
+  } catch (e) {}
 }
 
 const addSellButton = function () {
@@ -59,7 +59,7 @@ const addSellButton = function () {
         topCardContainerElements.item(0).appendChild(sellButton)
       }
     }
-  } catch (e) { }
+  } catch (e) {}
 }
 
 const addHoldersCount = function (profileDetails) {
@@ -117,6 +117,31 @@ const addHolderPercentages = function (profileDetails) {
   } catch (e) {}
 }
 
+const addHolderPositions = function (profileDetails) {
+  if (!profileDetails) return
+
+  const holderPositionClassName = 'plus-profile-holder-position'
+  if (document.getElementsByClassName(holderPositionClassName).length !== 0) return
+
+  try {
+    const holderDiv = profileDetails.firstElementChild.lastElementChild
+    const holderContainer = holderDiv.children.item(1)
+    const holderList = holderContainer.firstElementChild
+
+    // Skip the first two and last item
+    for (let i = 2; i < (holderList.childElementCount - 1); i++) {
+      let listItem = holderList.children.item(i)
+
+      let span = document.createElement('span')
+      span.className = `${holderPositionClassName} fc-muted fs-14px mr-3`
+      span.innerHTML = `${i - 1}`
+
+      const avatarAndName = listItem.firstElementChild
+      avatarAndName.insertBefore(span, avatarAndName.firstElementChild)
+    }
+  } catch (e) {}
+}
+
 const enrichProfile = function () {
   let profileDetails = document.querySelector('creator-profile-details')
   if (!profileDetails) return
@@ -128,6 +153,8 @@ const enrichProfile = function () {
   addHoldersCount(profileDetails)
 
   addHolderPercentages(profileDetails)
+
+  addHolderPositions(profileDetails)
 }
 
 const enrichWallet = function () {
