@@ -3,6 +3,8 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
+let username
+
 const getSpotPrice = function () {
   const elementList = document.getElementsByClassName('right-bar-creators__balance-box')
 
@@ -18,11 +20,14 @@ const getSpotPrice = function () {
 }
 
 const getUserName = function () {
+  if (username) return username
+  
   const elementList = document.getElementsByClassName('change-account-selector__ellipsis-restriction')
 
   try {
     const changeAccountSelector = elementList.item(0)
-    return changeAccountSelector.innerHTML.trim()
+    username = changeAccountSelector.innerHTML.trim() 
+    return username
   } catch (e) {}
 
   return ''
@@ -139,13 +144,26 @@ const addHolderRankings = function (profileDetails) {
     const holderContainer = holderDiv.children.item(1)
     const holderList = holderContainer.firstElementChild
 
+    const username = getUserName()
+    let startingIndex = 2
+
+    const firstHolderItem = holderList.children.item(1)
+    if (firstHolderItem) {
+      const nameElement = firstHolderItem.firstElementChild.lastElementChild
+      const holderName = nameElement.innerHTML.replace(/\s*<.*?>\s*/g, '').trim()
+
+      if (username !== holderName) {
+        startingIndex = 1
+      }
+    }
+
     // Skip the first two and last item
-    for (let i = 2; i < (holderList.childElementCount - 1); i++) {
+    for (let i = startingIndex; i < (holderList.childElementCount - 1); i++) {
       let listItem = holderList.children.item(i)
 
       let span = document.createElement('span')
       span.className = `${holderPositionClassName} fc-muted fs-14px mr-3`
-      span.innerHTML = `${i - 1}`
+      span.innerHTML = `${i - startingIndex + 1}`
 
       const avatarAndName = listItem.firstElementChild
       avatarAndName.insertBefore(span, avatarAndName.firstElementChild)
@@ -165,12 +183,13 @@ const highlightUserInHolderList = function (profileDetails) {
     const holderList = holderContainer.firstElementChild
 
     const username = getUserName()
+
     // Skip the first two and last item
     for (let i = 2; i < (holderList.childElementCount - 1); i++) {
       let listItem = holderList.children.item(i)
 
-      const avatarAndName = listItem.firstElementChild.lastElementChild
-      const holderName = avatarAndName.innerHTML.replace(/\s*<.*?>\s*/g, '').trim()
+      const nameElement = listItem.firstElementChild.lastElementChild
+      const holderName = nameElement.innerHTML.replace(/\s*<.*?>\s*/g, '').trim()
 
       if (username === holderName) {
         listItem.className = listItem.className + ` ${highlightClassName}`
@@ -284,8 +303,10 @@ const init = function () {
   // app-root is dynamically loaded, so we observe changes to the child list
   const config = { childList: true, subtree: true }
   const appRoot = document.querySelector('app-root')
-  const appRootObserver = new MutationObserver(appRootObserverCallback)
-  appRootObserver.observe(appRoot, config)
+  if (appRoot) {
+    const appRootObserver = new MutationObserver(appRootObserverCallback)
+    appRootObserver.observe(appRoot, config)
+  }
 }
 
 init()
