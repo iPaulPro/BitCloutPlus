@@ -17,6 +17,17 @@ const getSpotPrice = function () {
   return 0
 }
 
+const getUserName = function () {
+  const elementList = document.getElementsByClassName('change-account-selector__ellipsis-restriction')
+
+  try {
+    const changeAccountSelector = elementList.item(0)
+    return changeAccountSelector.innerHTML.trim()
+  } catch (e) {}
+
+  return ''
+}
+
 const addNativeCoinPrice = function () {
   const nativePriceId = 'plus-native-price'
   if (document.getElementById(nativePriceId)) return
@@ -142,6 +153,37 @@ const addHolderRankings = function (profileDetails) {
   } catch (e) {}
 }
 
+const highlightUserInHolderList = function (profileDetails) {
+  if (!profileDetails) return
+
+  const highlightClassName = 'plus-profile-user-highlight'
+  if (document.getElementsByClassName(highlightClassName).length > 0) return
+
+  try {
+    const holderDiv = profileDetails.firstElementChild.lastElementChild
+    const holderContainer = holderDiv.children.item(1)
+    const holderList = holderContainer.firstElementChild
+
+    const username = getUserName()
+    // Skip the first two and last item
+    for (let i = 2; i < (holderList.childElementCount - 1); i++) {
+      let listItem = holderList.children.item(i)
+
+      const avatarAndName = listItem.firstElementChild.lastElementChild
+      const holderName = avatarAndName.innerHTML.replace(/\s*<.*?>\s*/g, '').trim()
+
+      if (username === holderName) {
+        listItem.className = listItem.className + ` ${highlightClassName}`
+        listItem.style.backgroundColor = '#FFFACD'
+      }
+    }
+
+    // Avoid going through the list again if none were found the first time
+    let listItem = holderList.children.item(0)
+    listItem.className = listItem.className + ` ${highlightClassName}`
+  } catch (e) {}
+}
+
 const enrichProfile = function () {
   let profileDetails = document.querySelector('creator-profile-details')
   if (!profileDetails) return
@@ -153,6 +195,8 @@ const enrichProfile = function () {
   addHoldersCount(profileDetails)
 
   addHolderPercentages(profileDetails)
+
+  highlightUserInHolderList(profileDetails)
 
   addHolderRankings(profileDetails)
 }
