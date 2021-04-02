@@ -3,11 +3,15 @@
   "description": "bitclout.com on steroids",
   "version": "0.1",
   "manifest_version": 3,
+  "omnibox": { "keyword" : "bc" },
   "content_scripts": [
     {
       "matches": ["https://*.bitclout.com/*"],
       "js": ["main.js"],
       "run_at": "document_end"
     }
-  ]
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
 }
