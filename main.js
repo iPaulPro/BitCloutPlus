@@ -20,7 +20,7 @@ const getSpotPrice = function () {
 }
 
 const getUserName = function () {
-  if (username) return username
+  if (username && username !== '') return username
   
   const elementList = document.getElementsByClassName('change-account-selector__ellipsis-restriction')
 
@@ -203,6 +203,59 @@ const highlightUserInHolderList = function (profileDetails) {
   } catch (e) {}
 }
 
+const addEditProfileButton = function () {
+  let editProfileButtonId = 'plus-sidebar-edit-profile'
+  if (document.getElementById(editProfileButtonId)) return
+
+  const leftBarButtons = document.querySelectorAll('left-bar-button')
+  try {
+    Array.from(leftBarButtons).forEach(button => {
+      const profileDiv = button.firstElementChild.lastElementChild
+      const profileAnchor = profileDiv.firstElementChild
+
+      if (profileAnchor.innerHTML === "Profile") {
+        const a = document.createElement('a')
+        a.id = editProfileButtonId
+        a.href = 'update-profile'
+        a.className = 'fc-muted fs-12px ml-2 pl-1 pr-1'
+        a.innerText = 'Edit'
+
+        profileDiv.appendChild(a)
+      }
+    })
+  } catch (e) {}
+}
+
+const addNewPostButton = function () {
+  let addPostButtonId = 'plus-add-new-post'
+  if (document.getElementById(addPostButtonId)) return
+
+  const globalNavElements = document.getElementsByClassName('global__nav__inner')
+  try {
+    const globalNav = globalNavElements.item(0)
+
+    let button = document.createElement('button')
+    button.id = addPostButtonId
+    button.type = 'button'
+    button.className = 'ml-5 btn btn-primary font-weight-bold fs-14px pl-5 pr-5'
+    button.innerText = 'Post'
+    button.onclick = ev => window.location.href='posts/new'
+
+    globalNav.appendChild(button)
+  } catch (e) {}
+}
+
+const toggleSidebar = function () {
+  // New post screen is typically only used for mobile, so we need to hide the sidebar
+  const createPostPage = document.querySelector('app-create-post-page')
+  const leftBar = document.querySelector('left-bar')
+  if (createPostPage) {
+    leftBar.style.display = 'none'
+  } else {
+    leftBar.style.display = 'inherit'
+  }
+}
+
 const enrichProfile = function () {
   let profileDetails = document.querySelector('creator-profile-details')
   if (!profileDetails) return
@@ -279,8 +332,18 @@ const enrichBuy = function () {
   } catch (e) {}
 }
 
+const addGlobalEnrichments = function () {
+  addEditProfileButton()
+
+  addNewPostButton()
+
+  toggleSidebar()
+}
+
 // Callback function to execute when body mutations are observed
 const appRootObserverCallback = function (mutationsList, observer) {
+  addGlobalEnrichments()
+
   let profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
     enrichProfile()
