@@ -1,0 +1,11 @@
+.plus-profile-follows-you {
+    background-color: #f5f5f5 !important;
+    padding: .1rem .7rem !important;
+}
+
+#plus-add-new-post {
+    border-radius: 24px;
+    padding-left: 4rem;
+    padding-right: 4rem;
+    margin-left: 2.5rem;
+}
