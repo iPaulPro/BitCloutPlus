@@ -11,9 +11,7 @@ const getSpotPrice = function () {
   try {
     const priceContainerDiv = elementList.item(0).firstElementChild
     const priceDiv = priceContainerDiv.children.item(1)
-    const price = parseFloat(priceDiv.innerHTML.replace(/[^0-9\.]+/g, ''))
-
-    return price
+    return parseFloat(priceDiv.innerHTML.replace(/[^0-9\.]+/g, ''))
   } catch (e) {}
 
   return 0
@@ -276,6 +274,11 @@ const highlightUserInHolderList = function (profileDetails) {
   } catch (e) {}
 }
 
+const getUserNameFromUrl = function () {
+  const segments = new URL(document.location).pathname.split('/')
+  return segments.pop() || segments.pop()
+}
+
 const addFollowingEnrichments = function (topCard) {
   if (!topCard) return
 
@@ -287,54 +290,44 @@ const addFollowingEnrichments = function (topCard) {
       .then(loggedInProfile => {
         if (document.getElementById(followingCountId)) return
 
-        const loggedInKey = loggedInProfile.PublicKeyBase58Check
+        const profileUsername = getUserNameFromUrl();
 
-        const segments = new URL(document.location).pathname.split('/');
-        const profileUsername = segments.pop() || segments.pop();
+        return getFollowing(profileUsername).then(followingRes => {
+          if (document.getElementById(followingCountId)) return
 
-        getProfile(profileUsername)
-          .then(profile => {
-            if (document.getElementById(followingCountId)) return
+          const userDataDiv = topCard.firstElementChild.children.item(3)
+          const following = followingRes.PublicKeyToProfileEntry
+          const loggedInKey = loggedInProfile.PublicKeyBase58Check
 
-            const key = profile.PublicKeyBase58Check
+          let followsYou = following[`${loggedInKey}`] !== undefined
+          if (followsYou) {
+            const usernameDiv = userDataDiv.firstElementChild
 
-            return getFollowing(profileUsername).then(followingRes => {
-              if (document.getElementById(followingCountId)) return
+            const followsYouSpan = document.createElement('span')
+            followsYouSpan.className = 'plus-profile-follows-you ml-3 fs-12px font-weight-normal text-grey5 br-12px'
+            followsYouSpan.innerText = 'Follows you'
 
-              const userDataDiv = topCard.firstElementChild.children.item(3)
+            usernameDiv.appendChild(followsYouSpan)
+          }
 
-              const following = followingRes.PublicKeyToProfileEntry
-              let followsYou = following[`${loggedInKey}`] !== undefined
-              if (followsYou) {
-                const usernameDiv = userDataDiv.firstElementChild
+          const bottomDiv = userDataDiv.lastElementChild
 
-                const followsYouSpan = document.createElement('span')
-                followsYouSpan.className = 'plus-profile-follows-you ml-3 fs-12px font-weight-normal text-grey5 br-12px'
-                followsYouSpan.innerText = 'Follows you'
+          const countSpan = document.createElement('span')
+          countSpan.className = 'font-weight-bold'
+          countSpan.innerText = `${followingRes.NumFollowers}`
 
-                usernameDiv.appendChild(followsYouSpan)
-              }
+          const labelSpan = document.createElement('span')
+          labelSpan.className = 'fc-muted'
+          labelSpan.innerHTML = 'Following&nbsp;&nbsp;'
 
-              const bottomDiv = userDataDiv.lastElementChild
+          const a = document.createElement('a')
+          a.id = followingCountId
+          a.className = 'link--unstyled'
+          a.href = document.location.pathname + '/following'
+          a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
 
-              const countSpan = document.createElement('span')
-              countSpan.className = 'font-weight-bold'
-              countSpan.innerText = `${followingRes.NumFollowers}`
-
-              const labelSpan = document.createElement('span')
-              labelSpan.className = 'fc-muted'
-              labelSpan.innerHTML = 'Following&nbsp;&nbsp;'
-
-              const a = document.createElement('a')
-              a.id = followingCountId
-              a.className = 'link--unstyled'
-              a.href = document.location.pathname + '/following'
-              a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
-
-              bottomDiv.insertBefore(a, bottomDiv.lastElementChild)
-            })
-          })
-
+          bottomDiv.insertBefore(a, bottomDiv.lastElementChild)
+        })
       })
   } catch (e) {}
 }
@@ -394,11 +387,39 @@ const toggleSidebar = function () {
   }
 }
 
+const addSendBitCloutMenuItem = function () {
+  let sendBitCloutId = 'plus-profile-send-bitclout'
+  if (document.getElementById(sendBitCloutId)) return
+
+  const dropdownMenuElements = document.getElementsByClassName('dropdown-menu')
+  try {
+    Array.from(dropdownMenuElements).forEach(dropDown => {
+      const dropDownParent = dropDown.parentElement
+      if (dropDownParent.parentElement.className.includes('js-creator-profile-top-card-container')) {
+        //<a><i class="fas fa-ban" aria-hidden="true"></i> Block User </a>
+        const a = document.createElement('a')
+        a.id = sendBitCloutId
+        a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
+        a.innerHTML = '<i class="fas fa-wallet" aria-hidden="true"></i> Send $BitClout '
+
+        const username = getUserNameFromUrl()
+        a.onclick = ev => window.location.href = `send-bitclout?username=${username}`
+
+        dropDown.insertBefore(a, dropDown.firstElementChild)
+      }
+    })
+  } catch (e) {
+    console.log(e);
+  }
+}
+
 const enrichProfile = function () {
   let profileDetails = document.querySelector('creator-profile-details')
   if (!profileDetails) return
 
   addSellButton()
+
+  addSendBitCloutMenuItem()
 
   const topCard = document.querySelector('creator-profile-top-card')
 
@@ -474,6 +495,18 @@ const enrichBuy = function () {
   } catch (e) {}
 }
 
+const enrichTransfer = function () {
+  const transferElement = document.querySelector('transfer-bitclout')
+  const recipientDiv = transferElement.children.item(2)
+  const usernameInput = recipientDiv.lastElementChild
+
+  if (usernameInput.value && usernameInput.value.length > 0) return
+
+  const params = new URLSearchParams(window.location.search)
+  const username = params.get('username')
+  usernameInput.value = username
+}
+
 const addGlobalEnrichments = function () {
   addEditProfileButton()
 
@@ -486,21 +519,27 @@ const addGlobalEnrichments = function () {
 const appRootObserverCallback = function (mutationsList, observer) {
   addGlobalEnrichments()
 
-  let profilePage = document.querySelector('app-creator-profile-page')
+  const profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
     enrichProfile()
     return
   }
 
-  let wallet = document.querySelector('wallet')
+  const wallet = document.querySelector('wallet')
   if (wallet) {
     enrichWallet()
     return
   }
 
-  let tradePage = document.querySelector('trade-creator-page')
+  const tradePage = document.querySelector('trade-creator-page')
   if (tradePage) {
     enrichBuy()
+    return
+  }
+
+  const transferPage = document.querySelector('transfer-bitclout-page')
+  if (transferPage) {
+    enrichTransfer()
   }
 }
 
