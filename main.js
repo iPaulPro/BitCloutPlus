@@ -59,6 +59,7 @@ const getProfile = function (username) {
     'credentials': 'include'
   }).then(res => res.json())
     .then(res => res.ProfilesFound[0])
+    .catch(e => {})
 }
 
 const getUser = function (key) {
@@ -81,6 +82,7 @@ const getUser = function (key) {
     'credentials': 'include'
   }).then(res => res.json())
     .then(res => res.userData.userList[0])
+    .catch(e => {})
 }
 
 const getFollowing = function (username) {
@@ -104,6 +106,7 @@ const getFollowing = function (username) {
     'mode': 'cors',
     'credentials': 'include'
   }).then(res => res.json())
+    .catch(e => {})
 }
 
 const addNativeCoinPrice = function (topCard) {
@@ -119,11 +122,16 @@ const addNativeCoinPrice = function (topCard) {
     const spotPrice = getSpotPrice()
     const nativePrice = (price / spotPrice).toFixed(1)
 
+    const tooltipAttr = document.createAttribute('data-bs-toggle')
+    tooltipAttr.value = 'tooltip'
+
     let span = document.createElement('span')
     span.id = nativePriceId
     span.className = 'fc-muted mr-2 fs-13px'
     span.style.fontWeight = '500'
-    span.innerText = `(${nativePrice} BC)`
+    span.innerText = `(${nativePrice})`
+    span.title = '$BitClout price'
+    span.setAttributeNode(tooltipAttr)
     coinPriceDiv.insertBefore(span, coinPriceDiv.lastElementChild)
   } catch (e) {}
 }
@@ -215,7 +223,7 @@ const addHolderRankings = function (profileDetails) {
     const holderContainer = holderDiv.children.item(1)
     const holderList = holderContainer.firstElementChild
 
-    const username = getLoggedInUserName()
+    const username = getUserNameFromUrl()
     let startingIndex = 2
 
     const firstHolderItem = holderList.children.item(1)
@@ -285,51 +293,50 @@ const addFollowingEnrichments = function (topCard) {
   const followingCountId = 'plus-profile-following-count'
   if (document.getElementById(followingCountId)) return
 
-  try {
-    getProfile(getLoggedInUserName())
-      .then(loggedInProfile => {
+  getProfile(getLoggedInUserName())
+    .then(loggedInProfile => {
+      if (document.getElementById(followingCountId)) return
+
+      const profileUsername = getUserNameFromUrl()
+
+      return getFollowing(profileUsername).then(followingRes => {
         if (document.getElementById(followingCountId)) return
 
-        const profileUsername = getUserNameFromUrl();
+        const userDataDiv = topCard.firstElementChild.children.item(3)
+        const following = followingRes.PublicKeyToProfileEntry
+        const loggedInKey = loggedInProfile.PublicKeyBase58Check
 
-        return getFollowing(profileUsername).then(followingRes => {
-          if (document.getElementById(followingCountId)) return
+        let followsYou = following[`${loggedInKey}`] !== undefined
+        if (followsYou) {
+          const usernameDiv = userDataDiv.firstElementChild
 
-          const userDataDiv = topCard.firstElementChild.children.item(3)
-          const following = followingRes.PublicKeyToProfileEntry
-          const loggedInKey = loggedInProfile.PublicKeyBase58Check
+          const followsYouSpan = document.createElement('span')
+          followsYouSpan.className = 'plus-profile-follows-you ml-3 fs-12px font-weight-normal text-grey5 br-12px'
+          followsYouSpan.innerText = 'Follows you'
 
-          let followsYou = following[`${loggedInKey}`] !== undefined
-          if (followsYou) {
-            const usernameDiv = userDataDiv.firstElementChild
+          usernameDiv.appendChild(followsYouSpan)
+        }
 
-            const followsYouSpan = document.createElement('span')
-            followsYouSpan.className = 'plus-profile-follows-you ml-3 fs-12px font-weight-normal text-grey5 br-12px'
-            followsYouSpan.innerText = 'Follows you'
+        const bottomDiv = userDataDiv.lastElementChild
 
-            usernameDiv.appendChild(followsYouSpan)
-          }
+        const countSpan = document.createElement('span')
+        countSpan.className = 'font-weight-bold'
+        countSpan.innerText = `${followingRes.NumFollowers}`
 
-          const bottomDiv = userDataDiv.lastElementChild
+        const labelSpan = document.createElement('span')
+        labelSpan.className = 'fc-muted'
+        labelSpan.innerHTML = 'Following&nbsp;&nbsp;'
 
-          const countSpan = document.createElement('span')
-          countSpan.className = 'font-weight-bold'
-          countSpan.innerText = `${followingRes.NumFollowers}`
+        const a = document.createElement('a')
+        a.id = followingCountId
+        a.className = 'link--unstyled'
+        a.href = document.location.pathname + '/following'
+        a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
 
-          const labelSpan = document.createElement('span')
-          labelSpan.className = 'fc-muted'
-          labelSpan.innerHTML = 'Following&nbsp;&nbsp;'
-
-          const a = document.createElement('a')
-          a.id = followingCountId
-          a.className = 'link--unstyled'
-          a.href = document.location.pathname + '/following'
-          a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
-
-          bottomDiv.insertBefore(a, bottomDiv.lastElementChild)
-        })
+        bottomDiv.insertBefore(a, bottomDiv.lastElementChild)
       })
-  } catch (e) {}
+    })
+    .catch(e => {})
 }
 
 const addEditProfileButton = function () {
@@ -387,30 +394,81 @@ const toggleSidebar = function () {
   }
 }
 
-const addSendBitCloutMenuItem = function () {
-  let sendBitCloutId = 'plus-profile-send-bitclout'
+const addSendBitCloutMenuItem = function (menu) {
+  let sendBitCloutId = 'plus-profile-menu-send-bitclout'
   if (document.getElementById(sendBitCloutId)) return
 
-  const dropdownMenuElements = document.getElementsByClassName('dropdown-menu')
   try {
-    Array.from(dropdownMenuElements).forEach(dropDown => {
-      const dropDownParent = dropDown.parentElement
-      if (dropDownParent.parentElement.className.includes('js-creator-profile-top-card-container')) {
-        //<a><i class="fas fa-ban" aria-hidden="true"></i> Block User </a>
-        const a = document.createElement('a')
-        a.id = sendBitCloutId
-        a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-        a.innerHTML = '<i class="fas fa-wallet" aria-hidden="true"></i> Send $BitClout '
+    const a = document.createElement('a')
+    a.id = sendBitCloutId
+    a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
+    a.innerHTML = '<i class="fas fa-wallet" aria-hidden="true"></i> Send $BitClout '
 
-        const username = getUserNameFromUrl()
-        a.onclick = ev => window.location.href = `send-bitclout?username=${username}`
+    const username = getUserNameFromUrl()
+    a.onclick = ev => window.location.href = `send-bitclout?username=${username}`
 
-        dropDown.insertBefore(a, dropDown.firstElementChild)
-      }
+    menu.insertBefore(a, menu.firstElementChild)
+  } catch (e) {}
+}
+
+const addSendMessageMenuItem = function (menu) {
+  if (!menu) return
+
+  let sendMessageId = 'plus-profile-menu-send-message'
+  if (document.getElementById(sendMessageId)) return
+
+  try {
+    const a = document.createElement('a')
+    a.id = sendMessageId
+    a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
+    a.innerHTML = '<i class="fas fa-envelope" aria-hidden="true"></i> Message '
+
+    const username = getUserNameFromUrl()
+    a.onclick = ev => window.location.href = `inbox/${username}`
+
+    menu.insertBefore(a, menu.lastElementChild)
+  } catch (e) {}
+}
+
+const addCopyPublicKeyMenuItem = function (menu) {
+  if (!menu) return
+
+  let copyKeyId = 'plus-profile-menu-copy-key'
+  if (document.getElementById(copyKeyId)) return
+
+  const username = getUserNameFromUrl()
+  getProfile(username)
+    .then(profile => {
+      if (document.getElementById(copyKeyId)) return
+
+      const a = document.createElement('a')
+      a.id = copyKeyId
+      a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
+      a.innerHTML = '<i class="fas fa-clone" aria-hidden="true"></i> Copy Public Key '
+
+      const key = profile.PublicKeyBase58Check
+      a.onclick = ev => navigator.clipboard.writeText(key)
+
+      menu.insertBefore(a, menu.lastElementChild)
     })
-  } catch (e) {
-    console.log(e);
-  }
+    .catch(reason => {})
+}
+
+const getProfileMenu = function () {
+  const dropdownMenuElements = document.getElementsByClassName('dropdown-menu')
+  let menu
+
+  try {
+    for (const dropdown of dropdownMenuElements) {
+      const dropDownParent = dropdown.parentElement
+      if (dropDownParent.parentElement.className.includes('js-creator-profile-top-card-container')) {
+        menu = dropdown
+        break
+      }
+    }
+  } catch (e) {}
+
+  return menu
 }
 
 const enrichProfile = function () {
@@ -418,21 +476,20 @@ const enrichProfile = function () {
   if (!profileDetails) return
 
   addSellButton()
-
-  addSendBitCloutMenuItem()
+  
+  const profileMenu = getProfileMenu()
+  console.log(`profileMenu = ${profileMenu}`)
+  addSendBitCloutMenuItem(profileMenu)
+  addSendMessageMenuItem(profileMenu)
+  addCopyPublicKeyMenuItem(profileMenu)
 
   const topCard = document.querySelector('creator-profile-top-card')
 
   addNativeCoinPrice(topCard)
-
   addFollowingEnrichments(topCard)
-
   addHoldersCount(profileDetails)
-
   addHolderPercentages(profileDetails, topCard)
-
   highlightUserInHolderList(profileDetails)
-
   addHolderRankings(profileDetails)
 }
 
