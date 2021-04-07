@@ -1,6 +1,7 @@
-.plus-profile-follows-you {
+.plus-profile-label {
     background-color: #f5f5f5 !important;
     padding: .1rem .7rem !important;
+    cursor: default;
 }
 
 #plus-add-new-post {

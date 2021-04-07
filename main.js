@@ -109,18 +109,16 @@ const getFollowing = function (username) {
     .catch(e => {})
 }
 
-const addNativeCoinPrice = function (topCard) {
+const addNativeCoinPrice = function (topCard, profile) {
   const nativePriceId = 'plus-native-price'
   if (document.getElementById(nativePriceId)) return
 
   try {
     const userDataDiv = topCard.firstElementChild.children.item(3)
-    const coinPriceDiv = userDataDiv.lastElementChild.lastElementChild
-    const coinInDollars = coinPriceDiv.firstElementChild.innerHTML.trim().replace(/,/g, '')
-    const price = parseFloat(coinInDollars.slice(2, coinInDollars.length))
+    const userDataFooter = userDataDiv.lastElementChild
+    const coinPriceDiv = userDataFooter.children.item(1)
 
-    const spotPrice = getSpotPrice()
-    const nativePrice = (price / spotPrice).toFixed(1)
+    const nativePrice = (profile.CoinPriceBitCloutNanos / 1000000000).toFixed(2)
 
     const tooltipAttr = document.createAttribute('data-bs-toggle')
     tooltipAttr.value = 'tooltip'
@@ -132,7 +130,7 @@ const addNativeCoinPrice = function (topCard) {
     span.innerText = `(${nativePrice})`
     span.title = '$BitClout price'
     span.setAttributeNode(tooltipAttr)
-    coinPriceDiv.insertBefore(span, coinPriceDiv.lastElementChild)
+    coinPriceDiv.firstElementChild.appendChild(span)
   } catch (e) {}
 }
 
@@ -287,7 +285,7 @@ const getUserNameFromUrl = function () {
   return segments.pop() || segments.pop()
 }
 
-const addFollowingEnrichments = function (topCard) {
+const addProfileEnrichments = function (topCard) {
   if (!topCard) return
 
   const followingCountId = 'plus-profile-following-count'
@@ -295,23 +293,24 @@ const addFollowingEnrichments = function (topCard) {
 
   getProfile(getLoggedInUserName())
     .then(loggedInProfile => {
-      if (document.getElementById(followingCountId)) return
+      addNativeCoinPrice(topCard, loggedInProfile)
+
+      if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
 
       const profileUsername = getUserNameFromUrl()
 
       return getFollowing(profileUsername).then(followingRes => {
-        if (document.getElementById(followingCountId)) return
+        if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
 
         const userDataDiv = topCard.firstElementChild.children.item(3)
-        const following = followingRes.PublicKeyToProfileEntry
+        const usernameDiv = userDataDiv.firstElementChild
+        const followingList = followingRes.PublicKeyToProfileEntry
         const loggedInKey = loggedInProfile.PublicKeyBase58Check
 
-        let followsYou = following[`${loggedInKey}`] !== undefined
+        let followsYou = followingList[loggedInKey] !== undefined
         if (followsYou) {
-          const usernameDiv = userDataDiv.firstElementChild
-
           const followsYouSpan = document.createElement('span')
-          followsYouSpan.className = 'plus-profile-follows-you ml-3 fs-12px font-weight-normal text-grey5 br-12px'
+          followsYouSpan.className = 'plus-profile-label ml-3 fs-12px font-weight-normal text-grey5 br-12px'
           followsYouSpan.innerText = 'Follows you'
 
           usernameDiv.appendChild(followsYouSpan)
@@ -333,7 +332,30 @@ const addFollowingEnrichments = function (topCard) {
         a.href = document.location.pathname + '/following'
         a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
 
-        bottomDiv.insertBefore(a, bottomDiv.lastElementChild)
+        bottomDiv.insertBefore(a, bottomDiv.firstElementChild.nextSibling)
+
+        const hodlerLabelId = 'plus-profile-hodler-label'
+        if (document.getElementById(hodlerLabelId)) return
+
+        return getProfile(profileUsername)
+          .then(profile => {
+            if (document.getElementById(hodlerLabelId)) return
+
+            const userDataDiv = topCard.firstElementChild.children.item(3)
+            const key = profile.PublicKeyBase58Check
+
+            let hodler = loggedInProfile.UsersThatHODL.find(user => user.HODLerPublicKeyBase58Check === key)
+            if (hodler) {
+              const isHodlerSpan = document.createElement('span')
+              isHodlerSpan.className = 'plus-profile-label ml-3 fs-12px font-weight-normal text-grey5 br-12px'
+              isHodlerSpan.title = 'Coin holder'
+              isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
+              isHodlerSpan.innerHTML = '<i class="fas fa-coins" aria-hidden="true"></i>'
+
+              usernameDiv.appendChild(isHodlerSpan)
+            }
+          })
+          .catch(e => {})
       })
     })
     .catch(e => {})
@@ -430,30 +452,6 @@ const addSendMessageMenuItem = function (menu) {
   } catch (e) {}
 }
 
-const addCopyPublicKeyMenuItem = function (menu) {
-  if (!menu) return
-
-  let copyKeyId = 'plus-profile-menu-copy-key'
-  if (document.getElementById(copyKeyId)) return
-
-  const username = getUserNameFromUrl()
-  getProfile(username)
-    .then(profile => {
-      if (document.getElementById(copyKeyId)) return
-
-      const a = document.createElement('a')
-      a.id = copyKeyId
-      a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-      a.innerHTML = '<i class="fas fa-clone" aria-hidden="true"></i> Copy Public Key '
-
-      const key = profile.PublicKeyBase58Check
-      a.onclick = ev => navigator.clipboard.writeText(key)
-
-      menu.insertBefore(a, menu.lastElementChild)
-    })
-    .catch(reason => {})
-}
-
 const getProfileMenu = function () {
   const dropdownMenuElements = document.getElementsByClassName('dropdown-menu')
   let menu
@@ -476,17 +474,13 @@ const enrichProfile = function () {
   if (!profileDetails) return
 
   addSellButton()
-  
+
   const profileMenu = getProfileMenu()
-  console.log(`profileMenu = ${profileMenu}`)
   addSendBitCloutMenuItem(profileMenu)
   addSendMessageMenuItem(profileMenu)
-  addCopyPublicKeyMenuItem(profileMenu)
 
   const topCard = document.querySelector('creator-profile-top-card')
-
-  addNativeCoinPrice(topCard)
-  addFollowingEnrichments(topCard)
+  addProfileEnrichments(topCard)
   addHoldersCount(profileDetails)
   addHolderPercentages(profileDetails, topCard)
   highlightUserInHolderList(profileDetails)
