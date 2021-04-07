@@ -1,5 +1,4 @@
-# BitClout Plus
-Chrome / Brave extension to enhance bitclout.com pages
+BitClout Plus is a Chrome / Brave browser extension that enhances bitclout.com pages
 
 ## Features
 
@@ -23,7 +22,7 @@ Until BitClout Plus is available on the Chrome Web Store, you may install manual
 
 #### Step 1
 
-Download the latest release from the [releases](https://github.com/iPaulPro/BitCloutPlus/releases) page and unzip.
+Download the latest release from the [releases](https://github.com/iPaulPro/BitCloutPlus/releases) page, or click the button at the top of this page, and unzip.
 
 #### Step 2
 
