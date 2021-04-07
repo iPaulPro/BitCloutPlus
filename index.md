@@ -1,37 +1,45 @@
-## Welcome to GitHub Pages
+# BitClout Plus
+Chrome / Brave extension to enhance bitclout.com pages
 
-You can use the [editor on GitHub](https://github.com/iPaulPro/BitCloutPlus/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+## Features
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+#### Profile 
+- Adds sell button
+- Shows coin price in BTCLT
+- Shows number of holders
+- Shows percentage of coins held for each holder
+- Shows positional ranking of coin holders
 
-### Markdown
+#### Buy
+- Shows founder fee percentage in buy screen
+  
+#### Wallet
+- Shows number of coins held
+- Shows total BitClout value of coins held
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## Installation
 
-```markdown
-Syntax highlighted code block
+Until BitClout Plus is available on the Chrome Web Store, you may install manually.
 
-# Header 1
-## Header 2
-### Header 3
+#### Step 1
 
-- Bulleted
-- List
+Download the latest release from the [releases](https://github.com/iPaulPro/BitCloutPlus/releases) page and unzip.
 
-1. Numbered
-2. List
+#### Step 2
 
-**Bold** and _Italic_ and `Code` text
+Enable [developer mode](https://developer.chrome.com/docs/extensions/mv2/faq/#faq-dev-01) in Chrome or Brave.
 
-[Link](url) and ![Image](src)
-```
+#### Step 3
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+Click "Load unpacked" and select the unzipped project directory.
 
-### Jekyll Themes
+## Roadmap
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/iPaulPro/BitCloutPlus/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+#### Planned features
+- Dark mode
+- Following count on profiles
+- "Follows you" and "Coin holder" labels on profiles
 
-### Support or Contact
+## Credits
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+Created by [paulburke](https://bitclout.com/u/paulburke)
