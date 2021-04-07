@@ -141,7 +141,6 @@ const addFounderReward = function (topCard, profile) {
   try {
     const userDataDiv = topCard.firstElementChild.children.item(3)
     const userDataFooter = userDataDiv.lastElementChild
-    userDataFooter.className = userDataFooter.className + ' mb-1 mt-2'
 
     const founderReward = (profile.CoinEntry.CreatorBasisPoints / 100).toFixed(0)
     const feeSpan = document.createElement('span')
@@ -311,7 +310,18 @@ const getUserNameFromUrl = function () {
   return segments.pop() || segments.pop()
 }
 
-const addProfileEnrichments = function (topCard) {
+const addProfileEnrichmentsFromUser = function (topCard) {
+  if (!topCard) return
+
+  const username = getUserNameFromUrl()
+  getProfile(username)
+    .then(profile => {
+      addNativeCoinPrice(topCard, profile)
+      addFounderReward(topCard, profile)
+    }).catch(e => {})
+}
+
+const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
   if (!topCard) return
 
   const followingCountId = 'plus-profile-following-count'
@@ -321,15 +331,13 @@ const addProfileEnrichments = function (topCard) {
     .then(loggedInProfile => {
       if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
 
-      addNativeCoinPrice(topCard, loggedInProfile)
-      addFounderReward(topCard, loggedInProfile)
-
       const profileUsername = getUserNameFromUrl()
 
       return getFollowing(profileUsername).then(followingRes => {
         if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
 
         const userDataDiv = topCard.firstElementChild.children.item(3)
+
         const usernameDiv = userDataDiv.firstElementChild
         const followingList = followingRes.PublicKeyToProfileEntry
         const loggedInKey = loggedInProfile.PublicKeyBase58Check
@@ -344,6 +352,7 @@ const addProfileEnrichments = function (topCard) {
         }
 
         const bottomDiv = userDataDiv.lastElementChild
+        bottomDiv.className = bottomDiv.className + ' mb-1 mt-3'
 
         const countSpan = document.createElement('span')
         countSpan.className = 'font-weight-bold'
@@ -506,7 +515,8 @@ const enrichProfile = function () {
   addSendMessageMenuItem(profileMenu)
 
   const topCard = document.querySelector('creator-profile-top-card')
-  addProfileEnrichments(topCard)
+  addProfileEnrichmentsFromLoggedInUser(topCard)
+  addProfileEnrichmentsFromUser(topCard)
   addHoldersCount(profileDetails)
   addHolderPercentages(profileDetails, topCard)
   highlightUserInHolderList(profileDetails)
