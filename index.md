@@ -42,3 +42,5 @@ Click "Load unpacked" and select the unzipped project directory.
 ## Credits
 
 Created by [paulburke](https://bitclout.com/u/paulburke)
+
+Icon by [charliehilton](https://bitclout.com/u/charliehilton)
