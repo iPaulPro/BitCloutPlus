@@ -110,7 +110,7 @@ const getFollowing = function (username) {
 }
 
 const addNativeCoinPrice = function (topCard, profile) {
-  const nativePriceId = 'plus-native-price'
+  const nativePriceId = 'plus-profile-native-price'
   if (document.getElementById(nativePriceId)) return
 
   try {
@@ -131,6 +131,32 @@ const addNativeCoinPrice = function (topCard, profile) {
     span.title = '$BitClout price'
     span.setAttributeNode(tooltipAttr)
     coinPriceDiv.firstElementChild.appendChild(span)
+  } catch (e) {}
+}
+
+const addFounderReward = function (topCard, profile) {
+  const founderRewardId = 'plus-profile-founder-reward'
+  if (document.getElementById(founderRewardId)) return
+
+  try {
+    const userDataDiv = topCard.firstElementChild.children.item(3)
+    const userDataFooter = userDataDiv.lastElementChild
+    userDataFooter.className = userDataFooter.className + ' mb-1 mt-2'
+
+    const founderReward = (profile.CoinEntry.CreatorBasisPoints / 100).toFixed(0)
+    const feeSpan = document.createElement('span')
+    feeSpan.className = 'font-weight-bold'
+    feeSpan.innerText = `${founderReward}`
+
+    const labelSpan = document.createElement('span')
+    labelSpan.className = 'fc-muted'
+    labelSpan.innerHTML = 'Founder Reward&nbsp;&nbsp;'
+
+    const div = document.createElement('div')
+    div.id = founderRewardId
+    div.innerHTML = `${feeSpan.outerHTML}% ${labelSpan.outerHTML}`
+
+    userDataFooter.insertBefore(div, userDataFooter.lastElementChild)
   } catch (e) {}
 }
 
@@ -293,9 +319,10 @@ const addProfileEnrichments = function (topCard) {
 
   getProfile(getLoggedInUserName())
     .then(loggedInProfile => {
-      addNativeCoinPrice(topCard, loggedInProfile)
-
       if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
+
+      addNativeCoinPrice(topCard, loggedInProfile)
+      addFounderReward(topCard, loggedInProfile)
 
       const profileUsername = getUserNameFromUrl()
 
@@ -341,13 +368,12 @@ const addProfileEnrichments = function (topCard) {
           .then(profile => {
             if (document.getElementById(hodlerLabelId)) return
 
-            const userDataDiv = topCard.firstElementChild.children.item(3)
             const key = profile.PublicKeyBase58Check
 
             let hodler = loggedInProfile.UsersThatHODL.find(user => user.HODLerPublicKeyBase58Check === key)
             if (hodler) {
               const isHodlerSpan = document.createElement('span')
-              isHodlerSpan.className = 'plus-profile-label ml-3 fs-12px font-weight-normal text-grey5 br-12px'
+              isHodlerSpan.className = 'plus-profile-label ml-2 fs-12px font-weight-normal text-grey5 br-12px'
               isHodlerSpan.title = 'Coin holder'
               isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
               isHodlerSpan.innerHTML = '<i class="fas fa-coins" aria-hidden="true"></i>'
