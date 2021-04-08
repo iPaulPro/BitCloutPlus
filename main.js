@@ -11,7 +11,7 @@ const getSpotPrice = function () {
   try {
     const priceContainerDiv = elementList.item(0).firstElementChild
     const priceDiv = priceContainerDiv.children.item(1)
-    return parseFloat(priceDiv.innerHTML.replace(/[^0-9\.]+/g, ''))
+    return parseFloat(priceDiv.innerHTML.replace(/[^0-9.]+/g, ''))
   } catch (e) {}
 
   return 0
@@ -31,17 +31,19 @@ const getLoggedInUserName = function () {
   return ''
 }
 
+const reqHeaders = {
+  'accept': 'application/json, text/plain, */*',
+  'accept-language': 'en-US,en;q=0.9',
+  'content-type': 'application/json',
+  'sec-fetch-dest': 'empty',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-gpc': '1'
+}
+
 const getProfile = function (username) {
   return fetch('https://api.bitclout.com/get-profiles', {
-    'headers': {
-      'accept': 'application/json, text/plain, */*',
-      'accept-language': 'en-US,en;q=0.9',
-      'content-type': 'application/json',
-      'sec-fetch-dest': 'empty',
-      'sec-fetch-mode': 'cors',
-      'sec-fetch-site': 'same-site',
-      'sec-gpc': '1'
-    },
+    'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify({
       PublicKeyBase58Check: '',
@@ -62,40 +64,9 @@ const getProfile = function (username) {
     .catch(e => {})
 }
 
-const getUser = function (key) {
-  return fetch('https://api.bitclout.com/get-users-stateless', {
-    'headers': {
-      'accept': 'application/json, text/plain, */*',
-      'accept-language': 'en-US,en;q=0.9',
-      'content-type': 'application/json',
-      'sec-fetch-dest': 'empty',
-      'sec-fetch-mode': 'cors',
-      'sec-fetch-site': 'same-site',
-      'sec-gpc': '1'
-    },
-    'referrerPolicy': 'no-referrer',
-    'body': JSON.stringify({
-      PublicKeyBase58Check: key
-    }),
-    'method': 'POST',
-    'mode': 'cors',
-    'credentials': 'include'
-  }).then(res => res.json())
-    .then(res => res.userData.userList[0])
-    .catch(e => {})
-}
-
 const getFollowing = function (username) {
   return fetch('https://api.bitclout.com/get-follows-stateless', {
-    'headers': {
-      'accept': 'application/json, text/plain, */*',
-      'accept-language': 'en-US,en;q=0.9',
-      'content-type': 'application/json',
-      'sec-fetch-dest': 'empty',
-      'sec-fetch-mode': 'cors',
-      'sec-fetch-site': 'same-site',
-      'sec-gpc': '1'
-    },
+    'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify({
       PublicKeyBase58Check: '',
@@ -540,15 +511,39 @@ const enrichWallet = function () {
     const labelDiv = holdingsDiv.firstElementChild
     labelDiv.appendChild(coinCount)
 
-    const spotPrice = getSpotPrice()
+    const cloutSpotPrice = getSpotPrice()
     const valueDiv = holdingsDiv.lastElementChild
     const usdValue = parseFloat(valueDiv.firstElementChild.innerHTML.replace(/[^0-9.]+/g, ''))
-    const spotValue = (usdValue / spotPrice).toFixed(4)
+    const cloutValue = usdValue / cloutSpotPrice
 
     const cloutPrice = document.createElement('p')
     cloutPrice.className = 'fc-muted fs-14px ml-3'
-    cloutPrice.innerHTML = `${spotValue}`
+    cloutPrice.innerHTML = `${cloutValue.toFixed(4)}`
     valueDiv.appendChild(cloutPrice)
+
+    const scrollableSection = document.getElementsByClassName('global__mobile-scrollable-section').item(0)
+    const balanceValuesDiv = scrollableSection.children.item(1).firstElementChild.lastElementChild
+    const balanceCloutValue = parseFloat(balanceValuesDiv.firstElementChild.innerHTML.trim())
+    const balanceUsdValue = parseFloat(balanceValuesDiv.lastElementChild.innerHTML.replace(/[^0-9.]+/g, ''))
+
+    const cloutSpan = document.createElement('span')
+    cloutSpan.className = 'text-muted fs-14px font-weight-normal'
+    cloutSpan.innerHTML = `${(cloutValue + balanceCloutValue).toFixed(4)} <span class="text-muted fs-12px font-weight-normal">BTCLT</span>`
+
+    const usdSpan = document.createElement('span')
+    usdSpan.className = 'fs-16px'
+    const usdValueText = (usdValue + balanceUsdValue).toLocaleString()
+    usdSpan.innerHTML = `\$${usdValueText} <span class="text-muted fs-14px font-weight-normal">USD</span>`
+
+    const totalSpan = document.createElement('span')
+    totalSpan.className = 'ml-auto mr-15px'
+    totalSpan.style.lineHeight = '1.2'
+    totalSpan.appendChild(usdSpan)
+    totalSpan.appendChild(document.createElement('br'))
+    totalSpan.appendChild(cloutSpan)
+
+    const topBar = document.getElementsByClassName('global__top-bar').item(0)
+    topBar.appendChild(totalSpan)
   } catch (e) {}
 }
 
