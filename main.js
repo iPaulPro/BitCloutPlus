@@ -5,6 +5,8 @@
 
 let username
 
+const followingCountId = 'plus-profile-following-count'
+
 const getSpotPrice = function () {
   const elementList = document.getElementsByClassName('right-bar-creators__balance-box')
 
@@ -87,7 +89,13 @@ const addNativeCoinPrice = function (topCard, profile) {
   try {
     const userDataDiv = topCard.firstElementChild.children.item(3)
     const userDataFooter = userDataDiv.lastElementChild
-    const coinPriceDiv = userDataFooter.children.item(1)
+
+    let coinPriceDiv
+    if (document.getElementById(followingCountId)) {
+      coinPriceDiv = userDataFooter.children.item(2)
+    } else {
+      coinPriceDiv = userDataFooter.children.item(1)
+    }
 
     const nativePrice = (profile.CoinPriceBitCloutNanos / 1000000000).toFixed(2)
 
@@ -295,7 +303,6 @@ const addProfileEnrichmentsFromUser = function (topCard) {
 const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
   if (!topCard) return
 
-  const followingCountId = 'plus-profile-following-count'
   if (document.getElementById(followingCountId)) return
 
   getProfile(getLoggedInUserName())
@@ -486,8 +493,8 @@ const enrichProfile = function () {
   addSendMessageMenuItem(profileMenu)
 
   const topCard = document.querySelector('creator-profile-top-card')
-  addProfileEnrichmentsFromLoggedInUser(topCard)
   addProfileEnrichmentsFromUser(topCard)
+  addProfileEnrichmentsFromLoggedInUser(topCard)
   addHoldersCount(profileDetails)
   addHolderPercentages(profileDetails, topCard)
   highlightUserInHolderList(profileDetails)
