@@ -58,7 +58,7 @@ Click "Load unpacked" and select the unzipped project directory.
 #### Planned features
 - Dark mode
 - Settings toggles
-- 
+
 ## Credits
 
 Created by [paulburke](https://bitclout.com/u/paulburke)
