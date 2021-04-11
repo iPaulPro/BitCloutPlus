@@ -1,21 +1,9 @@
 # BitClout Plus
 Chrome / Brave extension to enhance bitclout.com pages
 
-## Features
+## Introduction
 
-#### Profile 
-- Adds sell button
-- Shows coin price in BTCLT
-- Shows number of holders
-- Shows percentage of coins held for each holder
-- Shows positional ranking of coin holders
-
-#### Buy
-- Shows founder fee percentage in buy screen
-  
-#### Wallet
-- Shows number of coins held
-- Shows total BitClout value of coins held
+Details can be found at [bitclout.plus](https://bitclout.plus)
 
 ## Installation
 
@@ -33,12 +21,6 @@ Enable [developer mode](https://developer.chrome.com/docs/extensions/mv2/faq/#fa
 
 Click "Load unpacked" and select the unzipped project directory.
 
-## Roadmap
-
-#### Planned features
-- Dark mode
-- Following count on profiles
-- "Follows you" and "Coin holder" labels on profiles
 
 ## Credits
 
