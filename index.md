@@ -1,20 +1,41 @@
 BitClout+ is a Chrome / Brave browser extension that enhances bitclout.com pages
 
+![Profile enhancments](assets/screenshots/bitclout-plus-profile@2x.jpg)
+
 ## Features
 
-#### Profile 
+#### General
+- [Omnibox](https://developer.chrome.com/docs/extensions/reference/omnibox/) support: Use keyword "bc" and enter username
+- Adds "Edit Profile" button in sidebar
+- Adds "Create Post" button in sidebar
+
+![General enhancments](assets/screenshots/bitclout-plus-sidebar.gif)
+
+#### Profile
+- Adds follower count and follows you labels
+- Shows hodler label
+- Shows Founder Reward
 - Adds sell button
 - Shows coin price in BTCLT
 - Shows number of holders
 - Shows percentage of coins held for each holder
 - Shows positional ranking of coin holders
+- Highlights you in coin holder lists
+- Adds "Send BitClout" and "Send Message" menu items
+
+![Holder list enhancments](assets/screenshots/bitclout-plus-holders@2x.jpg)
 
 #### Buy
 - Shows founder fee percentage in buy screen
-  
+
+![Profile enhancments](assets/screenshots/bitclout-plus-buy@2x.jpg)
+
 #### Wallet
+- Shows total USD and BitClout value in wallet
 - Shows number of coins held
 - Shows total BitClout value of coins held
+
+![Profile enhancments](assets/screenshots/bitclout-plus-wallet@2x.jpg)
 
 ## Installation
 
