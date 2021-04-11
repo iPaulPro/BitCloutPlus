@@ -416,19 +416,6 @@ const addNewPostButton = function () {
   } catch (e) {}
 }
 
-const toggleSidebar = function () {
-  // New post screen is typically only used for mobile, so we need to hide the sidebar
-  const createPostPage = document.querySelector('app-create-post-page')
-  const leftBar = document.querySelector('left-bar')
-  if (leftBar) {
-    if (createPostPage) {
-      leftBar.style.display = 'none'
-    } else {
-      leftBar.style.display = 'inherit'
-    }
-  }
-}
-
 const addSendBitCloutMenuItem = function (menu) {
   let sendBitCloutId = 'plus-profile-menu-send-bitclout'
   if (document.getElementById(sendBitCloutId)) return
@@ -598,10 +585,7 @@ const enrichTransfer = function () {
 
 const addGlobalEnrichments = function () {
   addEditProfileButton()
-
   addNewPostButton()
-
-  toggleSidebar()
 }
 
 // Callback function to execute when body mutations are observed
