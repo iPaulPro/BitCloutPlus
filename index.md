@@ -57,9 +57,8 @@ Click "Load unpacked" and select the unzipped project directory.
 
 #### Planned features
 - Dark mode
-- Following count on profiles
-- "Follows you" and "Coin holder" labels on profiles
-
+- Settings toggles
+- 
 ## Credits
 
 Created by [paulburke](https://bitclout.com/u/paulburke)
