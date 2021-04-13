@@ -3,7 +3,7 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-let username
+let username, timer, loggedInProfile
 
 const followingCountId = 'plus-profile-following-count'
 
@@ -305,7 +305,14 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
 
   if (document.getElementById(followingCountId)) return
 
-  getProfile(getLoggedInUserName())
+  let loggedInProfilePromise
+  if (loggedInProfile) {
+    loggedInProfilePromise = Promise.resolve(loggedInProfile)
+  } else {
+    loggedInProfilePromise = getProfile(getLoggedInUserName())
+  }
+
+  loggedInProfilePromise
     .then(loggedInProfile => {
       if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
 
@@ -583,6 +590,70 @@ const enrichTransfer = function () {
   usernameInput.value = username
 }
 
+const formatPriceUsd = function (price) {
+  return `\$${price.toFixed(2).toLocaleString()} USD`
+}
+
+const enrichBalanceBox = function (profile) {
+  if (!profile) return
+
+  try {
+    const nativePrice = (profile.CoinPriceBitCloutNanos / 1000000000).toFixed(2)
+    const spotPrice = getSpotPrice()
+    const coinPriceUsd = nativePrice * spotPrice
+
+    const creatorCoinBalanceId = 'plus-creator-coin-balance'
+    const creatorCoinPriceId = 'plus-creator-coin-price'
+    const creatorCoinPriceUsdId = 'plus-creator-coin-price-usd'
+    const existingElement = document.getElementById(creatorCoinBalanceId)
+    if (existingElement) {
+      document.getElementById(creatorCoinPriceId).innerHTML = ` ${nativePrice} BTCLT `
+      document.getElementById(creatorCoinPriceUsdId).innerHTML = formatPriceUsd(coinPriceUsd)
+      return
+    }
+
+    const creatorCoinBalanceContainer = document.createElement('div')
+    creatorCoinBalanceContainer.id = creatorCoinBalanceId
+    creatorCoinBalanceContainer.className = 'd-flex justify-content-between pt-10px'
+
+    const coinNameDiv = document.createElement('div')
+    coinNameDiv.className = 'd-flex'
+    coinNameDiv.style.textOverflow = 'ellipsis'
+    coinNameDiv.style.maxWidth = '150px'
+    coinNameDiv.style.overflow = 'hidden'
+    coinNameDiv.style.whiteSpace = 'noWrap'
+    coinNameDiv.innerText = `Your Coin`
+
+    const coinPriceDiv = document.createElement('div')
+    coinPriceDiv.className = 'd-flex align-items-center justify-content-end flex-wrap'
+
+    const coinPriceValueDiv = document.createElement('div')
+    coinPriceValueDiv.id = creatorCoinPriceId
+    coinPriceValueDiv.innerHTML = ` ${nativePrice} BTCLT `
+
+    const coinPriceConversionDiv = document.createElement('div')
+    coinPriceConversionDiv.className = 'd-flex text-muted'
+
+    const coinPriceApproximateDiv = document.createElement('div')
+    coinPriceApproximateDiv.className = 'ml-10px mr-10px'
+    coinPriceApproximateDiv.innerHTML = ' ≈ '
+
+    const coinPriceUsdDiv = document.createElement('div')
+    coinPriceUsdDiv.id = creatorCoinPriceUsdId
+    coinPriceUsdDiv.innerHTML = formatPriceUsd(coinPriceUsd)
+
+    coinPriceConversionDiv.appendChild(coinPriceApproximateDiv)
+    coinPriceConversionDiv.appendChild(coinPriceUsdDiv)
+    coinPriceDiv.appendChild(coinPriceValueDiv)
+    coinPriceDiv.appendChild(coinPriceConversionDiv)
+    creatorCoinBalanceContainer.appendChild(coinNameDiv)
+    creatorCoinBalanceContainer.appendChild(coinPriceDiv)
+
+    const balanceBox = document.getElementsByClassName('right-bar-creators__balance-box').item(0)
+    balanceBox.appendChild(creatorCoinBalanceContainer)
+  } catch (e) { }
+}
+
 const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
@@ -616,14 +687,38 @@ const appRootObserverCallback = function (mutationsList, observer) {
   }
 }
 
+const updateLoggedInProfile = function () {
+  const username = getLoggedInUserName()
+  if (username) {
+    getProfile(username)
+      .then(profile => {
+        loggedInProfile = profile
+        enrichBalanceBox(profile)
+      })
+      .catch(e => {})
+  }
+}
+
+const globalContainerObserverCallback = function (mutationsList, observer) {
+  updateLoggedInProfile()
+}
+
 const init = function () {
   // app-root is dynamically loaded, so we observe changes to the child list
   const config = { childList: true, subtree: true }
   const appRoot = document.querySelector('app-root')
   if (appRoot) {
+    const globalContainer = document.getElementsByClassName('global__container').item(0)
+    const globalObserverConfig = { childList: true, subtree: false }
+    const globalObserver = new MutationObserver(globalContainerObserverCallback)
+    globalObserver.observe(globalContainer, globalObserverConfig)
+
     const appRootObserver = new MutationObserver(appRootObserverCallback)
     appRootObserver.observe(appRoot, config)
   }
+
+  if (timer) clearInterval(timer)
+  timer = setInterval(updateLoggedInProfile, 60 * 1000)
 }
 
 init()
