@@ -353,7 +353,7 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
         a.href = document.location.pathname + '/following'
         a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
 
-        bottomDiv.insertBefore(a, bottomDiv.firstElementChild.nextSibling)
+        bottomDiv.firstElementChild.insertAdjacentElement('afterend', a)
 
         const hodlerLabelId = 'plus-profile-hodler-label'
         if (document.getElementById(hodlerLabelId)) return
@@ -705,16 +705,18 @@ const globalContainerObserverCallback = function (mutationsList, observer) {
 
 const init = function () {
   // app-root is dynamically loaded, so we observe changes to the child list
-  const config = { childList: true, subtree: true }
   const appRoot = document.querySelector('app-root')
   if (appRoot) {
-    const globalContainer = document.getElementsByClassName('global__container').item(0)
+    const appRootObserverConfig = { childList: true, subtree: true }
+    const appRootObserver = new MutationObserver(appRootObserverCallback)
+    appRootObserver.observe(appRoot, appRootObserverConfig)
+  }
+
+  const globalContainer = document.getElementsByClassName('global__container').item(0)
+  if (globalContainer) {
     const globalObserverConfig = { childList: true, subtree: false }
     const globalObserver = new MutationObserver(globalContainerObserverCallback)
     globalObserver.observe(globalContainer, globalObserverConfig)
-
-    const appRootObserver = new MutationObserver(appRootObserverCallback)
-    appRootObserver.observe(appRoot, config)
   }
 
   if (timer) clearInterval(timer)
