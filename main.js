@@ -33,6 +33,20 @@ const getLoggedInUserName = function () {
   return ''
 }
 
+function loadCSS(file) {
+  const link = document.createElement("link");
+  link.href = chrome.runtime.getURL(file + '.css');
+  link.id = file;
+  link.type = "text/css";
+  link.rel = "stylesheet";
+  document.getElementsByTagName("head")[0].appendChild(link);
+}
+
+function unloadCSS(file) {
+  const cssNode = document.getElementById(file);
+  cssNode && cssNode.parentNode.removeChild(cssNode);
+}
+
 const reqHeaders = {
   'accept': 'application/json, text/plain, */*',
   'accept-language': 'en-US,en;q=0.9',
@@ -423,6 +437,47 @@ const addNewPostButton = function () {
   } catch (e) {}
 }
 
+const addDarkModeSwitch = function () {
+  let darkModeSwitchId = 'plus-dark-mode-switch'
+  if (document.getElementById(darkModeSwitchId)) return
+
+  const globalNavElements = document.getElementsByClassName('global__nav__inner')
+  try {
+    const globalNav = globalNavElements.item(0)
+    globalNav.classList.add('d-flex')
+    globalNav.classList.add('flex-column')
+
+    const input = document.createElement('input')
+    input.id = darkModeSwitchId
+    input.type = 'checkbox'
+    input.className = 'custom-control-input'
+    input.onclick = ev => {
+      if (input.checked) {
+        loadCSS('dark')
+      } else {
+        unloadCSS('dark')
+      }
+    }
+
+    const icon = document.createElement('i')
+    icon.className = 'fas fa-moon'
+    icon.setAttribute('aria-hidden', 'true')
+    icon.style.color = '#666'
+
+    const label = document.createElement('label')
+    label.className = 'custom-control-label'
+    label.setAttribute('for', darkModeSwitchId)
+    label.appendChild(icon)
+
+    const div = document.createElement('div')
+    div.className = 'custom-control custom-switch mt-auto mb-4 ml-auto mr-auto'
+    div.appendChild(input)
+    div.appendChild(label)
+
+    globalNav.appendChild(div)
+  } catch (e) {}
+}
+
 const addSendBitCloutMenuItem = function (menu) {
   let sendBitCloutId = 'plus-profile-menu-send-bitclout'
   if (document.getElementById(sendBitCloutId)) return
@@ -657,6 +712,7 @@ const enrichBalanceBox = function (profile) {
 const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
+  addDarkModeSwitch()
 }
 
 // Callback function to execute when body mutations are observed
