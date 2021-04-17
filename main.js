@@ -437,6 +437,16 @@ const addNewPostButton = function () {
   } catch (e) {}
 }
 
+const toggleDarkMode = function (enabled) {
+  if (enabled) {
+    loadCSS('dark')
+    chrome.storage.sync.set({'darkMode' : true})
+  } else {
+    unloadCSS('dark')
+    chrome.storage.sync.set({'darkMode' : false})
+  }
+}
+
 const addDarkModeSwitch = function () {
   let darkModeSwitchId = 'plus-dark-mode-switch'
   if (document.getElementById(darkModeSwitchId)) return
@@ -451,13 +461,7 @@ const addDarkModeSwitch = function () {
     input.id = darkModeSwitchId
     input.type = 'checkbox'
     input.className = 'custom-control-input'
-    input.onclick = ev => {
-      if (input.checked) {
-        loadCSS('dark')
-      } else {
-        unloadCSS('dark')
-      }
-    }
+    input.onclick = ev => toggleDarkMode(input.checked)
 
     const icon = document.createElement('i')
     icon.className = 'fas fa-moon'
@@ -475,6 +479,10 @@ const addDarkModeSwitch = function () {
     div.appendChild(label)
 
     globalNav.appendChild(div)
+
+    chrome.storage.sync.get(['darkMode'], value => {
+      if (value.darkMode === true) input.checked = true
+    })
   } catch (e) {}
 }
 
@@ -760,6 +768,10 @@ const globalContainerObserverCallback = function (mutationsList, observer) {
 }
 
 const init = function () {
+  chrome.storage.sync.get(['darkMode'], value => {
+    if (value.darkMode === true) loadCSS('dark')
+  })
+
   // app-root is dynamically loaded, so we observe changes to the child list
   const appRoot = document.querySelector('app-root')
   if (appRoot) {

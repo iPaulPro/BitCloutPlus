@@ -1,7 +1,7 @@
 /*
 @name			Dark BitClout
 @namespace		chapel
-@version		1.0.3
+@version		1.0.4
 @description	A dark theme for BitClout.
 @author			chapel
 @license		MIT
@@ -16,8 +16,9 @@ body,
 .search-bar__results-dropdown,
 .sign-up__cp-button-override,
 .left-bar-mobile__flyout-div,
-.modal-content {
-    background-color: #0d0d0d !important;
+.modal-content,
+.feed-post__dropdown-menu-item {
+    background-color: #0d0d0d;
 }
 
 .buy-bitclout__box-label-adjustment {
@@ -28,6 +29,13 @@ body,
 .form-control:focus,
 .close,
 body {
+    color: #fff;
+}
+
+.feed-post-icon-row__icon:hover,
+.cursor-pointer:hover,
+.dropdown-menu-item:hover,
+.dropdown-menu-item:hover > i {
     color: #fff !important;
 }
 
@@ -43,7 +51,7 @@ textarea,
 .messages-inbox__desktop-column,
 .messages-thread__desktop-column,
 .modal-header {
-    border-color: #202020 !important;
+    border-color: #202020;
 }
 
 .border-bottom,
@@ -60,7 +68,7 @@ textarea,
 
 @media (max-width: 991.98px) {
     .search-bar__icon {
-        border-color: #0d0d0d !important;
+        border-color: #0d0d0d;
     }
 }
 
@@ -80,42 +88,58 @@ textarea,
 .background-color-white,
 .fixed-top-bar,
 .modal-header,
-.dropdown-menu {
+.dropdown-menu,
+.js-feed-post-hover:hover,
+.feed-post__dropdown-menu-item:hover {
+    background-color: #202020;
+}
+
+.bg-light,
+.feed-post__quoted-content:hover {
     background-color: #202020 !important;
 }
 
-.bg-light {
-    background-color: #202020 !important;
+.feed-post__quoted-content:hover,
+.js-feed-post-hover:hover,
+.js-feed-post-hover:hover .feed-post__quoted-content,
+.dropdown-menu {
+    border-color: #484848 !important;
 }
 
 .search-bar__fix-active {
-    border-left-color: rgba(0, 0, 0, 0) !important;
+    border-left-color: rgba(0, 0, 0, 0);
 }
 
 .fc-muted,
 .fa-clock,
 .feed-post__icon-row-holder *,
-.explorer-container pre {
+.explorer-container pre,
+.feed-post__container .icon-repost,
+.feed-post__container .icon-repost + span {
+    color: #aaa;
+}
+
+.feed-post__container .icon-repost + span {
     color: #aaa !important;
 }
 
 .feed-post__blue-border,
 .tab-underline-active {
-    border-color: #256fef !important;
+    border-color: #256fef;
 }
 
 .fc-red,
 .icon-heart-fill,
 .dropdown-menu .text-danger * {
-    color: #fe3537 !important;
+    color: #fe3537;
 }
 
 .fa-check-circle {
-    color: #256fef !important;
+    color: #256fef;
 }
 
 .btn-outline-primary {
-    border-color: #5a88d7 !important;
+    border-color: #5a88d7;
 }
 
 .global__container a,
@@ -124,19 +148,19 @@ a .fc-muted,
 .left-bar__dot-active,
 .btn-outline-primary,
 .explorer-container a {
-    color: #5a88d7 !important;
+    color: #5a88d7;
 }
 
 .global__nav__inner a,
 .text-grey5 .link--unstyled {
-    color: #aaa !important;
+    color: #aaa;
 }
 
 a.link--unstyled > a,
 a.link--unstyled,
 .creators-leaderboard__controls-column a,
 .fc-default {
-    color: #fff !important;
+    color: #fff;
 }
 
 a:hover,
@@ -150,32 +174,32 @@ a.link--unstyled:hover > a,
 a.holdings__creator-coin-name:hover *,
 .close:hover,
 .explorer-container a:hover {
-    color: #256fef !important;
+    color: #256fef;
 }
 
 .feed-post__container {
-    color: white !important;
+    color: white;
 }
 
 .file-upload-button:hover + .btn-outline-primary.btn-outline-primary,
 .btn-outline-primary:hover {
-    color: #fff !important;
-    background-color: #256fef !important;
+    color: #fff;
+    background-color: #256fef;
 }
 
 .left-bar__dot-active {
     color: #5a88d7 !important;
 }
 
-a.left-bar__dot-inactive {
-    color: transparent !important;
+a.left-bar__dot-inactive.left-bar__dot-inactive {
+    color: transparent;
 }
 
 a.btn-primary,
 button.btn-primary {
-    color: #fff !important;
-    background-color: #256fef !important;
-    border-color: #256fef !important;
+    color: #fff;
+    background-color: #256fef;
+    border-color: #256fef;
 }
 
 .fc-muted span {
@@ -183,27 +207,38 @@ button.btn-primary {
 }
 
 .sign-up__cp-button-override {
-    color: #fff !important;
-    border-color: #fff !important;
+    color: #fff;
+    border-color: #fff;
 }
 
 .messages-inbox__selected-thread {
-    background-color: inherit !important;
+    background-color: inherit;
     border-right-color: #5a88d7 !important;
 }
 
 .spinner-border {
-    width: 1rem !important;
-    height: 1rem !important;
-    margin-left: 50% !important;
+    width: 1rem;
+    height: 1rem;
+    margin-left: 50%;
 }
 
 .holdings__name {
-    max-width: 175px !important;
+    max-width: 175px;
+}
+
+.global__nav__inner img {
+    filter: invert(1);
 }
 
 /* Added by paulburke */
 
-left-bar img {
-    filter: invert(1.0);
+a.btn-secondary,
+button.btn-secondary {
+    color: #fff !important;
+    background-color: #333 !important;
+    border-color: #333 !important;
+}
+
+.plus-profile-label {
+    background-color: #333 !important;
 }

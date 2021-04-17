@@ -25,3 +25,5 @@ Click "Load unpacked" and select the unzipped project directory.
 ## Credits
 
 Created by [paulburke](https://bitclout.com/u/paulburke)
+
+Dark mode CSS by [chapel](https://bitclout.com/u/lepahc)
