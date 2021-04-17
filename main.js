@@ -104,13 +104,6 @@ const addNativeCoinPrice = function (topCard, profile) {
     const userDataDiv = topCard.firstElementChild.children.item(3)
     const userDataFooter = userDataDiv.lastElementChild
 
-    let coinPriceDiv
-    if (document.getElementById(followingCountId)) {
-      coinPriceDiv = userDataFooter.children.item(2)
-    } else {
-      coinPriceDiv = userDataFooter.children.item(1)
-    }
-
     const nativePrice = (profile.CoinPriceBitCloutNanos / 1000000000).toFixed(2)
 
     const tooltipAttr = document.createAttribute('data-bs-toggle')
@@ -123,7 +116,15 @@ const addNativeCoinPrice = function (topCard, profile) {
     span.innerText = `(${nativePrice})`
     span.title = '$BitClout price'
     span.setAttributeNode(tooltipAttr)
-    coinPriceDiv.firstElementChild.appendChild(span)
+
+    for (const child of userDataFooter.children) {
+      if (child.tagName === 'DIV'
+        && child.children.length > 0
+        && child.firstElementChild.innerHTML.trim().startsWith('~$')
+      ) {
+        child.firstElementChild.appendChild(span)
+      }
+    }
   } catch (e) {}
 }
 
@@ -319,11 +320,12 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
 
   if (document.getElementById(followingCountId)) return
 
+  const loggedInUserName = getLoggedInUserName()
   let loggedInProfilePromise
   if (loggedInProfile) {
     loggedInProfilePromise = Promise.resolve(loggedInProfile)
   } else {
-    loggedInProfilePromise = getProfile(getLoggedInUserName())
+    loggedInProfilePromise = getProfile(loggedInUserName)
   }
 
   loggedInProfilePromise
@@ -350,8 +352,8 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
           usernameDiv.appendChild(followsYouSpan)
         }
 
-        const bottomDiv = userDataDiv.lastElementChild
-        bottomDiv.className = bottomDiv.className + ' mb-1 mt-3'
+        const userDataFooter = userDataDiv.lastElementChild
+        userDataFooter.className = userDataFooter.className + ' mb-1 mt-3'
 
         const countSpan = document.createElement('span')
         countSpan.className = 'font-weight-bold'
@@ -367,10 +369,17 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
         a.href = document.location.pathname + '/following'
         a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
 
-        bottomDiv.firstElementChild.insertAdjacentElement('afterend', a)
+        for (const child of userDataFooter.children) {
+          if (child.tagName === 'DIV' && child.children.length > 1) {
+            const coinPriceLabelDiv = child.children.item(1)
+            if (coinPriceLabelDiv.innerHTML.startsWith('Coin Price')) {
+              userDataFooter.insertBefore(a, child)
+            }
+          }
+        }
 
         const hodlerLabelId = 'plus-profile-hodler-label'
-        if (document.getElementById(hodlerLabelId)) return
+        if (document.getElementById(hodlerLabelId) || loggedInUserName === profileUsername) return
 
         return getProfile(profileUsername)
           .then(profile => {
