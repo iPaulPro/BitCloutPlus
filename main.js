@@ -90,6 +90,7 @@ const getFollowing = function (username) {
       PublicKeyBase58Check: '',
       username: username,
       getEntriesFollowingPublicKey: false,
+      NumToFetch: 5000
     }),
     'method': 'POST',
     'mode': 'cors',
@@ -115,6 +116,7 @@ const addNativeCoinPrice = function (topCard, profile) {
     span.id = nativePriceId
     span.className = 'fc-muted mr-2 fs-13px'
     span.style.fontWeight = '500'
+    span.style.cursor = 'pointer'
     span.innerText = `(${nativePrice})`
     span.title = '$BitClout price'
     span.setAttributeNode(tooltipAttr)
@@ -335,6 +337,7 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
 
   getLoggedInProfile()
     .then(loggedInProfile => {
+      console.log(`loggedInProfile = ${JSON.stringify(loggedInProfile)}`);
       if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
 
       const profileUsername = getUserNameFromUrl()
@@ -379,12 +382,13 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
             const coinPriceLabelDiv = child.children.item(1)
             if (coinPriceLabelDiv.innerHTML.startsWith('Coin Price')) {
               userDataFooter.insertBefore(a, child)
+              break
             }
           }
         }
 
         const hodlerLabelId = 'plus-profile-hodler-label'
-        if (document.getElementById(hodlerLabelId) || loggedInUserName === profileUsername) return
+        if (document.getElementById(hodlerLabelId)) return
 
         return getProfile(profileUsername)
           .then(profile => {

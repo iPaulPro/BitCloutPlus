@@ -143,7 +143,6 @@ textarea,
 }
 
 .global__container a,
-a .fc-muted,
 .feed-post__coin-price-holder,
 .left-bar__dot-active,
 .btn-outline-primary,
@@ -241,4 +240,8 @@ button.btn-secondary {
 
 .plus-profile-label {
     background-color: #333 !important;
+}
+
+.text-muted {
+    color: #aaaaaa !important;
 }
