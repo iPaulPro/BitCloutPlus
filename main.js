@@ -3,6 +3,8 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
+const nanosInBitClout = 1000000000
+
 let username, timer, loggedInProfile
 
 const followingCountId = 'plus-profile-following-count'
@@ -104,7 +106,7 @@ const addNativeCoinPrice = function (topCard, profile) {
     const userDataDiv = topCard.firstElementChild.children.item(3)
     const userDataFooter = userDataDiv.lastElementChild
 
-    const nativePrice = (profile.CoinPriceBitCloutNanos / 1000000000).toFixed(2)
+    const nativePrice = (profile.CoinPriceBitCloutNanos / nanosInBitClout).toFixed(2)
 
     const tooltipAttr = document.createAttribute('data-bs-toggle')
     tooltipAttr.value = 'tooltip'
@@ -315,20 +317,23 @@ const addProfileEnrichmentsFromUser = function (topCard) {
     }).catch(e => {})
 }
 
+const getLoggedInProfile = function () {
+  let promise
+  if (loggedInProfile) {
+    promise = Promise.resolve(loggedInProfile)
+  } else {
+    const loggedInUserName = getLoggedInUserName()
+    promise = getProfile(loggedInUserName)
+  }
+  return promise
+}
+
 const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
   if (!topCard) return
 
   if (document.getElementById(followingCountId)) return
 
-  const loggedInUserName = getLoggedInUserName()
-  let loggedInProfilePromise
-  if (loggedInProfile) {
-    loggedInProfilePromise = Promise.resolve(loggedInProfile)
-  } else {
-    loggedInProfilePromise = getProfile(loggedInUserName)
-  }
-
-  loggedInProfilePromise
+  getLoggedInProfile()
     .then(loggedInProfile => {
       if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
 
@@ -624,30 +629,49 @@ const enrichBuy = function () {
   const percentageId = 'plus-trade-founder-fee-percentage'
   if (document.getElementById(percentageId)) return
 
-  try {
-    const tradeCreatorTable = document.querySelector('trade-creator-table')
-    if (!tradeCreatorTable) return
+  const tradeCreatorTable = document.querySelector('trade-creator-table')
+  if (!tradeCreatorTable) return
 
-    const receiveDiv = tradeCreatorTable.children.item(1).children.item(1)
-    const receiveAmount = parseFloat(receiveDiv.innerHTML.replace(/[^0-9\.]+/g, ''))
+  getLoggedInProfile()
+    .then(profile => profile.PublicKeyBase58Check)
+    .then(key => {
 
-    const rewardDiv = tradeCreatorTable.lastElementChild
-    const rewardSpan = rewardDiv.getElementsByTagName('span').item(0)
-    const rewardAmount = parseFloat(rewardSpan.innerHTML.replace(/[^0-9\.]+/g, ''))
+      const exchangingDiv = tradeCreatorTable.children.item(0)
+      const exchangingAmountSpan = exchangingDiv.children.item(1)
+      const exchangeText = exchangingAmountSpan.innerText.substring(0, exchangingAmountSpan.innerText.indexOf('BitClout'))
+      const exchangingAmount = parseFloat(exchangeText.trim())
+      if (exchangingAmount === 0) return Promise.reject()
 
-    const founderFee = (rewardAmount / receiveAmount * 100)
+      return fetch('https://api.bitclout.com/buy-or-sell-creator-coin-preview-WVAzTWpGOFFnMlBvWXZhTFA4NjNSZGNW', {
+        'headers': reqHeaders,
+        'referrerPolicy': 'no-referrer',
+        'body': JSON.stringify({
+          UpdaterPublicKeyBase58Check: key,
+          CreatorPublicKeyBase58Check: key,
+          OperationType: 'buy',
+          BitCloutToSellNanos: exchangingAmount * nanosInBitClout,
+          MinFeeRateNanosPerKB: 1000
+        }),
+        'method': 'POST',
+        'mode': 'cors',
+        'credentials': 'include'
+      })
+    })
+    .then(res => res.json())
+    .then(buyPreview => {
+      if (document.getElementById(percentageId)) return
 
-    let feePercentage = document.createElement('span')
-    feePercentage.id = percentageId
+      const founderFee = buyPreview.FounderRewardGeneratedNanos / nanosInBitClout
 
-    if (receiveAmount === 0) {
-      feePercentage.innerHTML = ` (100%)`
-    } else {
-      feePercentage.innerHTML = ` (${founderFee.toFixed(0)}%)`
-    }
+      let feePercentage = document.createElement('span')
+      feePercentage.id = percentageId
+      feePercentage.innerHTML = ` (${founderFee.toFixed(5)})`
 
-    rewardSpan.appendChild(feePercentage)
-  } catch (e) {}
+      const rewardDiv = tradeCreatorTable.lastElementChild
+      const rewardSpan = rewardDiv.getElementsByTagName('span').item(0)
+      rewardSpan.appendChild(feePercentage)
+    })
+    .catch(e => {})
 }
 
 const enrichTransfer = function () {
