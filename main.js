@@ -266,16 +266,14 @@ function getCoinsInCirculation (topCard) {
   const valueBar = topCard.firstElementChild.lastElementChild
   const circulationContainer = valueBar.firstElementChild
   const circulationHtml = circulationContainer.firstElementChild.innerHTML.trim()
-  const circulation = parseFloat(circulationHtml.slice(2, circulationHtml.length))
-  return circulation
+  return parseFloat(circulationHtml.slice(2, circulationHtml.length))
 }
 
-function higlightUserInHolderList (node, loggedInUsername) {
+function highlightUserInHolderList (node, loggedInUsername) {
   const avatarAndName = node.firstChild.firstChild
   const holderUsername = avatarAndName.textContent.trim().replaceAll('.', '')
   if (loggedInUsername === holderUsername) {
-    const highlightClassName = 'plus-profile-user-highlight'
-    node.className = highlightClassName
+    node.className = 'plus-profile-user-highlight'
     node.style.backgroundColor = '#FFFACD'
   }
 }
@@ -294,12 +292,12 @@ const addHolderEnrichments = function (profileDetails, topCard) {
     const firstHodlerDiv = holdersList.children.item(1)
     const firstAvatarAndName = firstHodlerDiv.firstChild.firstChild
     const firstHolderName = firstAvatarAndName.textContent.trim().replaceAll('.', '')
-    let userHoldsOwnCoin = pageUsername.startsWith(firstHolderName)
+    let userHoldsOwnCoin = pageUsername.startsWith(firstHolderName.toLowerCase())
 
     mutations.forEach(mutation => {
       Array.from(mutation.addedNodes, node => {
         const index = Number(node.dataset.sid)
-        higlightUserInHolderList(node, loggedInUsername)
+        highlightUserInHolderList(node, loggedInUsername)
         addHolderPositionRank(node, index, userHoldsOwnCoin)
         addHolderPercentage(node, index, circulation)
       })
