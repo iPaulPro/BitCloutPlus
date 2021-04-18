@@ -5,7 +5,9 @@
 
 const nanosInBitClout = 1000000000
 
-let username, timer, loggedInProfile
+let username, timer, loggedInProfile, currentUrl
+
+let observingHolders = false
 
 const followingCountId = 'plus-profile-following-count'
 
@@ -21,7 +23,7 @@ const getSpotPrice = function () {
   return 0
 }
 
-const getLoggedInUserName = function () {
+const getLoggedInUsername = function () {
   if (username && username !== '') return username
 
   const elementList = document.getElementsByClassName('change-account-selector__ellipsis-restriction')
@@ -182,128 +184,132 @@ const addSellButton = function () {
 const addHoldersCount = function (profileDetails) {
   if (!profileDetails) return
 
-  let holderCountId = 'plus-profile-holder-count'
-  if (document.getElementById(holderCountId)) return
+  const holderCountId = 'plus-profile-holder-count'
+  if (document.getElementById(holderCountId) || observingHolders) return
 
-  try {
-    let tabContent = profileDetails.firstElementChild.lastElementChild
+  const username = getUsernameFromUrl()
+  getProfile(username)
+    .then(profile => {
+      const tabContent = profileDetails.firstElementChild.lastElementChild
+      const holderDiv = tabContent.firstElementChild.firstElementChild
+      if (!holderDiv.innerHTML.startsWith('Holders')) return
 
-    let holderDiv = tabContent.firstElementChild.firstElementChild
-    if (!holderDiv.innerHTML.startsWith('Holders')) return
+      const usersThatHodl = profile.UsersThatHODL
 
-    let holders = document.getElementsByClassName('creator-profile-details__hodler-avatar')
-
-    let span = document.createElement('span')
-    span.id = holderCountId
-    span.className = 'fc-muted fs-16px'
-    span.innerText = `(${holders.length})`
-    holderDiv.appendChild(span)
-  } catch (e) {}
-}
-
-const addHolderPercentages = function (profileDetails, topCard) {
-  if (!profileDetails) return
-
-  const holderPercentageClassName = 'plus-profile-holder-share'
-  if (document.getElementsByClassName(holderPercentageClassName).length !== 0) return
-
-  try {
-    const holderDiv = profileDetails.firstElementChild.lastElementChild
-    const holderContainer = holderDiv.children.item(1)
-    const holderList = holderContainer.firstElementChild
-
-    const size = holderList.children.length - 1 // skip total row (last item)
-    for (let i = 0; i < size; i++) {
-      let listItem = holderList.children.item(i)
-      let heldColumnItem = listItem.children.item(1)
-      const coinsHeld = parseFloat(heldColumnItem.innerHTML)
-
-      if (!isNaN(coinsHeld)) {
-        const valueBar = topCard.firstElementChild.lastElementChild
-        const circulationContainer = valueBar.firstElementChild
-        const circulationHtml = circulationContainer.firstElementChild.innerHTML.trim()
-        const circulation = parseFloat(circulationHtml.slice(2, circulationHtml.length))
-
-        let span = document.createElement('span')
-        span.className = `${holderPercentageClassName} fc-muted fs-12px ml-1`
-        span.innerHTML = '(' + ((coinsHeld / circulation) * 100).toFixed(1) + '%)'
-        heldColumnItem.appendChild(span)
+      let span
+      const existingSpan = document.getElementById(holderCountId)
+      if (existingSpan) {
+        span = existingSpan
+      } else {
+        span = document.createElement('span')
+        span.id = holderCountId
+        span.className = 'fc-muted fs-16px'
+        holderDiv.appendChild(span)
       }
-    }
-  } catch (e) {}
+      span.innerText = `(${usersThatHodl.length})`
+    })
+    .catch(e => {})
 }
 
-const addHolderRankings = function (profileDetails) {
-  if (!profileDetails) return
+function addHolderPositionRank (node, index, userHoldsOwnCoin) {
+  if (userHoldsOwnCoin && index === 0) return
 
+  const itemId = 'plus-profile-holder-position-' + index
   const holderPositionClassName = 'plus-profile-holder-position'
-  if (document.getElementsByClassName(holderPositionClassName).length !== 0) return
+
+  let i
+  if (userHoldsOwnCoin) {
+    i = index
+  } else {
+    i = index + 1
+  }
 
   try {
-    const holderDiv = profileDetails.firstElementChild.lastElementChild
-    const holderContainer = holderDiv.children.item(1)
-    const holderList = holderContainer.firstElementChild
+    let span
+    const existingSpan = document.getElementById(itemId)
+    if (existingSpan) {
+      span = existingSpan
+    } else {
+      span = document.createElement('span')
+      span.id = itemId
+      span.className = `${holderPositionClassName} fc-muted fs-14px align-items-start col-2 pl-0`
 
-    const username = getUserNameFromUrl()
-    let startingIndex = 2
-
-    const firstHolderItem = holderList.children.item(1)
-    if (firstHolderItem) {
-      const nameElement = firstHolderItem.firstElementChild.lastElementChild
-      const holderName = nameElement.innerHTML.replace(/\s*<.*?>\s*/g, '').trim()
-
-      if (username !== holderName) {
-        startingIndex = 1
-      }
-    }
-
-    // Skip the first two and last item
-    for (let i = startingIndex; i < (holderList.childElementCount - 1); i++) {
-      let listItem = holderList.children.item(i)
-
-      let span = document.createElement('span')
-      span.className = `${holderPositionClassName} fc-muted fs-14px mr-3`
-      span.innerHTML = `${i - startingIndex + 1}`
-
-      const avatarAndName = listItem.firstElementChild
+      const avatarAndName = node.firstChild.firstChild
       avatarAndName.insertBefore(span, avatarAndName.firstElementChild)
     }
-  } catch (e) {}
+
+    span.innerText = `${i}`
+  } catch (e) { }
 }
 
-const highlightUserInHolderList = function (profileDetails) {
-  if (!profileDetails) return
-
-  const highlightClassName = 'plus-profile-user-highlight'
-  if (document.getElementsByClassName(highlightClassName).length > 0) return
-
+function addHolderPercentage (node, index, circulation) {
   try {
-    const holderDiv = profileDetails.firstElementChild.lastElementChild
-    const holderContainer = holderDiv.children.item(1)
-    const holderList = holderContainer.firstElementChild
+    const itemId = 'plus-profile-holder-percentage-' + index
+    const heldColumnItem = node.firstChild.childNodes.item(1)
+    const coinsHeld = parseFloat(heldColumnItem.innerHTML)
 
-    const username = getLoggedInUserName()
-
-    // Skip the first two and last item
-    for (let i = 2; i < (holderList.childElementCount - 1); i++) {
-      let listItem = holderList.children.item(i)
-
-      const nameElement = listItem.firstElementChild.lastElementChild
-      const holderName = nameElement.innerHTML.replace(/\s*<.*?>\s*/g, '').trim()
-
-      if (username === holderName) {
-        listItem.className = listItem.className + ` ${highlightClassName}`
-        listItem.style.backgroundColor = '#FFFACD'
-      }
+    const holderPercentageClassName = 'plus-profile-holder-share'
+    let span
+    const existingSpan = document.getElementById(itemId)
+    if (existingSpan) {
+      span = existingSpan
+    } else {
+      span = document.createElement('span')
+      span.className = `${holderPercentageClassName} fc-muted fs-12px ml-1`
+      heldColumnItem.appendChild(span)
     }
-
-    // Avoid going through the list again if none were found the first time
-    let listItem = holderList.children.item(0)
-    listItem.className = listItem.className + ` ${highlightClassName}`
-  } catch (e) {}
+    span.innerHTML = '(' + ((coinsHeld / circulation) * 100).toFixed(1) + '%)'
+  } catch (e) { }
 }
 
-const getUserNameFromUrl = function () {
+function getCoinsInCirculation (topCard) {
+  const valueBar = topCard.firstElementChild.lastElementChild
+  const circulationContainer = valueBar.firstElementChild
+  const circulationHtml = circulationContainer.firstElementChild.innerHTML.trim()
+  const circulation = parseFloat(circulationHtml.slice(2, circulationHtml.length))
+  return circulation
+}
+
+function higlightUserInHolderList (node, loggedInUsername) {
+  const avatarAndName = node.firstChild.firstChild
+  const holderUsername = avatarAndName.textContent.trim().replaceAll('.', '')
+  if (loggedInUsername === holderUsername) {
+    const highlightClassName = 'plus-profile-user-highlight'
+    node.className = highlightClassName
+    node.style.backgroundColor = '#FFFACD'
+  }
+}
+
+const addHolderEnrichments = function (profileDetails, topCard) {
+  const creatorProfileHodlers = document.querySelector('creator-profile-hodlers')
+  if (!profileDetails || !creatorProfileHodlers || observingHolders) return
+
+  const holdersList = creatorProfileHodlers.firstElementChild
+  const pageUsername = getUsernameFromUrl()
+  const loggedInUsername = getLoggedInUsername()
+  const circulation = getCoinsInCirculation(topCard)
+
+  const config = { childList: true, subtree: false }
+  new MutationObserver((mutations, observer) => {
+    const firstHodlerDiv = holdersList.children.item(1)
+    const firstAvatarAndName = firstHodlerDiv.firstChild.firstChild
+    const firstHolderName = firstAvatarAndName.textContent.trim().replaceAll('.', '')
+    let userHoldsOwnCoin = pageUsername.startsWith(firstHolderName)
+
+    mutations.forEach(mutation => {
+      Array.from(mutation.addedNodes, node => {
+        const index = Number(node.dataset.sid)
+        higlightUserInHolderList(node, loggedInUsername)
+        addHolderPositionRank(node, index, userHoldsOwnCoin)
+        addHolderPercentage(node, index, circulation)
+      })
+    })
+  }).observe(holdersList, config)
+
+  observingHolders = true
+}
+
+const getUsernameFromUrl = function () {
   const segments = new URL(document.location).pathname.split('/')
   return segments.pop() || segments.pop()
 }
@@ -311,7 +317,7 @@ const getUserNameFromUrl = function () {
 const addProfileEnrichmentsFromUser = function (topCard) {
   if (!topCard) return
 
-  const username = getUserNameFromUrl()
+  const username = getUsernameFromUrl()
   getProfile(username)
     .then(profile => {
       addNativeCoinPrice(topCard, profile)
@@ -324,7 +330,7 @@ const getLoggedInProfile = function () {
   if (loggedInProfile) {
     promise = Promise.resolve(loggedInProfile)
   } else {
-    const loggedInUserName = getLoggedInUserName()
+    const loggedInUserName = getLoggedInUsername()
     promise = getProfile(loggedInUserName)
   }
   return promise
@@ -337,10 +343,9 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
 
   getLoggedInProfile()
     .then(loggedInProfile => {
-      console.log(`loggedInProfile = ${JSON.stringify(loggedInProfile)}`);
       if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
 
-      const profileUsername = getUserNameFromUrl()
+      const profileUsername = getUsernameFromUrl()
 
       return getFollowing(profileUsername).then(followingRes => {
         if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
@@ -514,7 +519,7 @@ const addSendBitCloutMenuItem = function (menu) {
     a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
     a.innerHTML = '<i class="fas fa-wallet" aria-hidden="true"></i> Send $BitClout '
 
-    const username = getUserNameFromUrl()
+    const username = getUsernameFromUrl()
     a.onclick = ev => window.location.href = `send-bitclout?username=${username}`
 
     menu.insertBefore(a, menu.firstElementChild)
@@ -533,7 +538,7 @@ const addSendMessageMenuItem = function (menu) {
     a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
     a.innerHTML = '<i class="fas fa-envelope" aria-hidden="true"></i> Message '
 
-    const username = getUserNameFromUrl()
+    const username = getUsernameFromUrl()
     a.onclick = ev => window.location.href = `inbox/${username}`
 
     menu.insertBefore(a, menu.lastElementChild)
@@ -571,9 +576,7 @@ const enrichProfile = function () {
   addProfileEnrichmentsFromUser(topCard)
   addProfileEnrichmentsFromLoggedInUser(topCard)
   addHoldersCount(profileDetails)
-  addHolderPercentages(profileDetails, topCard)
-  highlightUserInHolderList(profileDetails)
-  addHolderRankings(profileDetails)
+  addHolderEnrichments(profileDetails, topCard)
 }
 
 const enrichWallet = function () {
@@ -762,6 +765,11 @@ const addGlobalEnrichments = function () {
 
 // Callback function to execute when body mutations are observed
 const appRootObserverCallback = function (mutationsList, observer) {
+  if (currentUrl !== window.location.href) {
+    observingHolders = false
+    currentUrl = window.location.href
+  }
+
   addGlobalEnrichments()
 
   const profilePage = document.querySelector('app-creator-profile-page')
@@ -789,7 +797,7 @@ const appRootObserverCallback = function (mutationsList, observer) {
 }
 
 const updateLoggedInProfile = function () {
-  const username = getLoggedInUserName()
+  const username = getLoggedInUsername()
   if (username) {
     getProfile(username)
       .then(profile => {
