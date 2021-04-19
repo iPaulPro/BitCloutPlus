@@ -53,14 +53,10 @@ Enable [developer mode](https://developer.chrome.com/docs/extensions/mv2/faq/#fa
 
 Click "Load unpacked" and select the unzipped project directory.
 
-## Roadmap
-
-#### Planned features
-- Dark mode
-- Settings toggles
-
 ## Credits
 
 Created by [paulburke](https://bitclout.com/u/paulburke)
 
 Icon by [charliehilton](https://bitclout.com/u/charliehilton)
+
+Dark mode CSS by [chapel](https://bitclout.com/u/lepahc)
