@@ -43,7 +43,7 @@ Until BitClout+ is available on the Chrome Web Store, you may install manually.
 
 #### Step 1
 
-[Download](https://github.com/iPaulPro/BitCloutPlus/releases/download/v0.3/bitcloutplus-0.3.zip) the latest release, and unzip.
+[Download](https://github.com/iPaulPro/BitCloutPlus/releases/download/v0.3.1/bitcloutplus-0.3.1.zip) the latest release, and unzip.
 
 #### Step 2
 
