@@ -4,10 +4,14 @@ BitClout+ is a Chrome / Brave browser extension that enhances bitclout.com pages
 
 ## Features
 
+![General enhancments](assets/screenshots/bitclout-plus-dark.gif)
+
 #### General
+- Dark mode (thanks [chapel](https://github.com/chapel/bitclout-darkmode))
 - [Omnibox](https://developer.chrome.com/docs/extensions/reference/omnibox/) support: Use keyword "bc" and enter username
 - Adds "Edit Profile" button in sidebar
 - Adds "Create Post" button in sidebar
+- Adds "Your coin" value in sidebar
 
 ![General enhancments](assets/screenshots/bitclout-plus-sidebar.gif)
 
