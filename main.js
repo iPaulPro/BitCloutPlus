@@ -273,8 +273,7 @@ function highlightUserInHolderList (node, loggedInUsername) {
   const avatarAndName = node.firstChild.firstChild
   const holderUsername = avatarAndName.textContent.trim().replaceAll('.', '')
   if (loggedInUsername === holderUsername) {
-    node.className = 'plus-profile-user-highlight'
-    node.style.backgroundColor = '#FFFACD'
+    node.className = 'light-grey-divider'
   }
 }
 
@@ -357,7 +356,7 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
         let followsYou = followingList[loggedInKey] !== undefined
         if (followsYou) {
           const followsYouSpan = document.createElement('span')
-          followsYouSpan.className = 'plus-profile-label ml-3 fs-12px font-weight-normal text-grey5 br-12px'
+          followsYouSpan.className = 'badge badge-pill badge-secondary ml-3 fs-12px text-grey5'
           followsYouSpan.innerText = 'Follows you'
 
           usernameDiv.appendChild(followsYouSpan)
@@ -402,7 +401,7 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
             let hodler = loggedInProfile.UsersThatHODL.find(user => user.HODLerPublicKeyBase58Check === key)
             if (hodler) {
               const isHodlerSpan = document.createElement('span')
-              isHodlerSpan.className = 'plus-profile-label ml-2 fs-12px font-weight-normal text-grey5 br-12px'
+              isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px text-grey5'
               isHodlerSpan.title = 'Coin holder'
               isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
               isHodlerSpan.innerHTML = '<i class="fas fa-coins" aria-hidden="true"></i>'
