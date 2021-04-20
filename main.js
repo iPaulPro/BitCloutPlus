@@ -38,17 +38,17 @@ const getLoggedInUsername = function () {
 }
 
 function loadCSS(file) {
-  const link = document.createElement("link");
-  link.href = chrome.runtime.getURL(file + '.css');
-  link.id = file;
-  link.type = "text/css";
-  link.rel = "stylesheet";
-  document.getElementsByTagName("head")[0].appendChild(link);
+  const link = document.createElement("link")
+  link.href = chrome.runtime.getURL(file + '.css')
+  link.id = file
+  link.type = "text/css"
+  link.rel = "stylesheet"
+  document.getElementsByTagName("head")[0].appendChild(link)
 }
 
 function unloadCSS(file) {
-  const cssNode = document.getElementById(file);
-  cssNode && cssNode.parentNode.removeChild(cssNode);
+  const cssNode = document.getElementById(file)
+  cssNode && cssNode.parentNode.removeChild(cssNode)
 }
 
 const reqHeaders = {
@@ -81,7 +81,7 @@ const getProfile = function (username) {
     'credentials': 'include'
   }).then(res => res.json())
     .then(res => res.ProfilesFound[0])
-    .catch(e => {})
+    .catch(() => {})
 }
 
 const getFollowing = function (username) {
@@ -98,7 +98,7 @@ const getFollowing = function (username) {
     'mode': 'cors',
     'credentials': 'include'
   }).then(res => res.json())
-    .catch(e => {})
+    .catch(() => {})
 }
 
 const addNativeCoinPrice = function (topCard, profile) {
@@ -208,7 +208,7 @@ const addHoldersCount = function (profileDetails) {
       }
       span.innerText = `(${usersThatHodl.length})`
     })
-    .catch(e => {})
+    .catch(() => {})
 }
 
 function addHolderPositionRank (node, index, userHoldsOwnCoin) {
@@ -287,7 +287,7 @@ const addHolderEnrichments = function (profileDetails, topCard) {
   const circulation = getCoinsInCirculation(topCard)
 
   const config = { childList: true, subtree: false }
-  new MutationObserver((mutations, observer) => {
+  new MutationObserver((mutations) => {
     const firstHodlerDiv = holdersList.children.item(1)
     const firstAvatarAndName = firstHodlerDiv.firstChild.firstChild
     const firstHolderName = firstAvatarAndName.textContent.trim().replaceAll('.', '')
@@ -319,7 +319,7 @@ const addProfileEnrichmentsFromUser = function (topCard) {
     .then(profile => {
       addNativeCoinPrice(topCard, profile)
       addFounderReward(topCard, profile)
-    }).catch(e => {})
+    }).catch(() => {})
 }
 
 const getLoggedInProfile = function () {
@@ -409,10 +409,10 @@ const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
               usernameDiv.appendChild(isHodlerSpan)
             }
           })
-          .catch(e => {})
+          .catch(() => {})
       })
     })
-    .catch(e => {})
+    .catch(() => {})
 }
 
 const addEditProfileButton = function () {
@@ -451,7 +451,7 @@ const addNewPostButton = function () {
     button.type = 'button'
     button.className = 'btn btn-secondary font-weight-bold fs-14px'
     button.innerText = 'Post'
-    button.onclick = ev => window.location.href = 'posts/new'
+    button.onclick = () => window.location.href = 'posts/new'
 
     globalNav.appendChild(button)
   } catch (e) {}
@@ -481,7 +481,7 @@ const addDarkModeSwitch = function () {
     input.id = darkModeSwitchId
     input.type = 'checkbox'
     input.className = 'custom-control-input'
-    input.onclick = ev => toggleDarkMode(input.checked)
+    input.onclick = () => toggleDarkMode(input.checked)
 
     const icon = document.createElement('i')
     icon.className = 'fas fa-moon'
@@ -517,7 +517,7 @@ const addSendBitCloutMenuItem = function (menu) {
     a.innerHTML = '<i class="fas fa-wallet" aria-hidden="true"></i> Send $BitClout '
 
     const username = getUsernameFromUrl()
-    a.onclick = ev => window.location.href = `send-bitclout?username=${username}`
+    a.onclick = () => window.location.href = `send-bitclout?username=${username}`
 
     menu.insertBefore(a, menu.firstElementChild)
   } catch (e) {}
@@ -536,7 +536,7 @@ const addSendMessageMenuItem = function (menu) {
     a.innerHTML = '<i class="fas fa-envelope" aria-hidden="true"></i> Message '
 
     const username = getUsernameFromUrl()
-    a.onclick = ev => window.location.href = `inbox/${username}`
+    a.onclick = () => window.location.href = `inbox/${username}`
 
     menu.insertBefore(a, menu.lastElementChild)
   } catch (e) {}
@@ -675,7 +675,7 @@ const enrichBuy = function () {
       const rewardSpan = rewardDiv.getElementsByTagName('span').item(0)
       rewardSpan.appendChild(feePercentage)
     })
-    .catch(e => {})
+    .catch(() => {})
 }
 
 const enrichTransfer = function () {
@@ -686,8 +686,7 @@ const enrichTransfer = function () {
   if (usernameInput.value && usernameInput.value.length > 0) return
 
   const params = new URLSearchParams(window.location.search)
-  const username = params.get('username')
-  usernameInput.value = username
+  usernameInput.value = params.get('username')
 }
 
 const formatPriceUsd = function (price) {
@@ -761,7 +760,7 @@ const addGlobalEnrichments = function () {
 }
 
 // Callback function to execute when body mutations are observed
-const appRootObserverCallback = function (mutationsList, observer) {
+const appRootObserverCallback = function () {
   if (currentUrl !== window.location.href) {
     observingHolders = false
     currentUrl = window.location.href
@@ -801,11 +800,11 @@ const updateLoggedInProfile = function () {
         loggedInProfile = profile
         enrichBalanceBox(profile)
       })
-      .catch(e => {})
+      .catch(() => {})
   }
 }
 
-const globalContainerObserverCallback = function (mutationsList, observer) {
+const globalContainerObserverCallback = function () {
   updateLoggedInProfile()
 }
 
