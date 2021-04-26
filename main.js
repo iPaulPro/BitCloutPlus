@@ -37,6 +37,26 @@ const getLoggedInUsername = function () {
   return ''
 }
 
+const getUsernameFromUrl = function () {
+  const segments = new URL(document.location).pathname.split('/')
+  return segments.pop() || segments.pop()
+}
+
+const getLoggedInProfile = function () {
+  let promise
+  if (loggedInProfile) {
+    promise = Promise.resolve(loggedInProfile)
+  } else {
+    const loggedInUserName = getLoggedInUsername()
+    promise = getProfile(loggedInUserName)
+      .then(profile => {
+        loggedInProfile = profile
+        return Promise.resolve(profile)
+      })
+  }
+  return promise
+}
+
 function loadCSS(file) {
   const link = document.createElement("link")
   link.href = chrome.runtime.getURL(file + '.css')
@@ -62,25 +82,18 @@ const reqHeaders = {
 }
 
 const getProfile = function (username) {
-  return fetch('https://api.bitclout.com/get-profiles', {
+  if (!username) return Promise.reject('Required parameter username is undefined')
+  return fetch('https://api.bitclout.com/get-single-profile', {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify({
-      PublicKeyBase58Check: '',
-      Username: username,
-      UsernamePrefix: '',
-      Description: '',
-      OrderBy: 'newest_last_post',
-      NumToFetch: 1,
-      ModerationType: '',
-      FetchUsersThatHODL: true,
-      AddGlobalFeedBool: false
+      Username: username
     }),
     'method': 'POST',
     'mode': 'cors',
     'credentials': 'include'
   }).then(res => res.json())
-    .then(res => res.ProfilesFound[0])
+    .then(res => res.Profile)
     .catch(() => {})
 }
 
@@ -89,10 +102,9 @@ const getFollowing = function (username) {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify({
-      PublicKeyBase58Check: '',
-      username: username,
+      Username: username,
       getEntriesFollowingPublicKey: false,
-      NumToFetch: 5000
+      NumToFetch: 10000
     }),
     'method': 'POST',
     'mode': 'cors',
@@ -101,12 +113,28 @@ const getFollowing = function (username) {
     .catch(() => {})
 }
 
-const addNativeCoinPrice = function (topCard, profile) {
+const getHodlers = function (readerPubKey, username) {
+  return fetch('https://api.bitclout.com/get-hodlers-for-public-key', {
+    'headers': reqHeaders,
+    'referrerPolicy': 'no-referrer',
+    'body': JSON.stringify({
+      ReaderPublicKeyBase58Check: readerPubKey,
+      username: username,
+      NumToFetch: 10000
+    }),
+    'method': 'POST',
+    'mode': 'cors',
+    'credentials': 'omit'
+  }).then(res => res.json())
+    .then(res => res.Hodlers)
+    .catch(() => {})
+}
+
+const addNativeCoinPrice = function (userDataDiv, profile) {
   const nativePriceId = 'plus-profile-native-price'
   if (document.getElementById(nativePriceId)) return
 
   try {
-    const userDataDiv = topCard.firstElementChild.children.item(3)
     const userDataFooter = userDataDiv.lastElementChild
 
     const nativePrice = (profile.CoinPriceBitCloutNanos / nanosInBitClout).toFixed(2)
@@ -134,12 +162,11 @@ const addNativeCoinPrice = function (topCard, profile) {
   } catch (e) {}
 }
 
-const addFounderReward = function (topCard, profile) {
+const addFounderReward = function (userDataDiv, profile) {
   const founderRewardId = 'plus-profile-founder-reward'
   if (document.getElementById(founderRewardId)) return
 
   try {
-    const userDataDiv = topCard.firstElementChild.children.item(3)
     const userDataFooter = userDataDiv.lastElementChild
 
     const founderReward = (profile.CoinEntry.CreatorBasisPoints / 100).toFixed(0)
@@ -181,34 +208,36 @@ const addSellButton = function () {
   } catch (e) {}
 }
 
-const addHoldersCount = function (profileDetails) {
+const addHoldersCount = function (pageProfile) {
+  let profileDetails = document.querySelector('creator-profile-details')
   if (!profileDetails) return
 
+  const contentTop = profileDetails.firstElementChild
+  if (!contentTop) return
+
+  const tabContent = contentTop.lastElementChild
+  if (!tabContent) return
+
+  const creatorCoinTabHeader = tabContent.firstElementChild
+  if (!creatorCoinTabHeader) return
+
+  const holderDiv = creatorCoinTabHeader.firstElementChild
+  if (!holderDiv || !holderDiv.innerHTML.startsWith('Holders')) return
+
+  const usersThatHodl = pageProfile.CoinEntry.NumberOfHolders
   const holderCountId = 'plus-profile-holder-count'
-  if (document.getElementById(holderCountId) || observingHolders) return
 
-  const username = getUsernameFromUrl()
-  getProfile(username)
-    .then(profile => {
-      const tabContent = profileDetails.firstElementChild.lastElementChild
-      const holderDiv = tabContent.firstElementChild.firstElementChild
-      if (!holderDiv.innerHTML.startsWith('Holders')) return
-
-      const usersThatHodl = profile.UsersThatHODL
-
-      let span
-      const existingSpan = document.getElementById(holderCountId)
-      if (existingSpan) {
-        span = existingSpan
-      } else {
-        span = document.createElement('span')
-        span.id = holderCountId
-        span.className = 'fc-muted fs-16px'
-        holderDiv.appendChild(span)
-      }
-      span.innerText = `(${usersThatHodl.length})`
-    })
-    .catch(() => {})
+  let span
+  const existingSpan = document.getElementById(holderCountId)
+  if (existingSpan) {
+    span = existingSpan
+  } else {
+    span = document.createElement('span')
+    span.id = holderCountId
+    span.className = 'fc-muted fs-16px'
+    holderDiv.appendChild(span)
+  }
+  span.innerText = `(${usersThatHodl})`
 }
 
 function addHolderPositionRank (node, index, userHoldsOwnCoin) {
@@ -234,7 +263,7 @@ function addHolderPositionRank (node, index, userHoldsOwnCoin) {
       span.id = itemId
       span.className = `${holderPositionClassName} fc-muted fs-14px align-items-start col-2 pl-0`
 
-      const avatarAndName = node.firstChild.firstChild
+      const avatarAndName = node.firstChild.firstChild.firstChild
       avatarAndName.insertBefore(span, avatarAndName.firstElementChild)
     }
 
@@ -245,7 +274,7 @@ function addHolderPositionRank (node, index, userHoldsOwnCoin) {
 function addHolderPercentage (node, index, circulation) {
   try {
     const itemId = 'plus-profile-holder-percentage-' + index
-    const heldColumnItem = node.firstChild.childNodes.item(1)
+    const heldColumnItem = node.firstChild.firstChild.childNodes.item(1)
     const coinsHeld = parseFloat(heldColumnItem.innerHTML)
 
     const holderPercentageClassName = 'plus-profile-holder-share'
@@ -263,156 +292,139 @@ function addHolderPercentage (node, index, circulation) {
 }
 
 function getCoinsInCirculation (topCard) {
-  const valueBar = topCard.firstElementChild.lastElementChild
-  const circulationContainer = valueBar.firstElementChild
-  const circulationHtml = circulationContainer.firstElementChild.innerHTML.trim()
-  return parseFloat(circulationHtml.slice(2, circulationHtml.length))
-}
-
-function highlightUserInHolderList (node, loggedInUsername) {
-  const avatarAndName = node.firstChild.firstChild
-  const holderUsername = avatarAndName.textContent.trim().replaceAll('.', '')
-  if (loggedInUsername === holderUsername) {
-    node.className = 'light-grey-divider'
+  try {
+    const valueBar = topCard.firstElementChild.lastElementChild
+    const circulationContainer = valueBar.firstElementChild
+    const circulationHtml = circulationContainer.firstElementChild.innerHTML.trim()
+    return parseFloat(circulationHtml.slice(2, circulationHtml.length))
+  } catch (e) {
+    return 0
   }
 }
 
-const addHolderEnrichments = function (profileDetails, topCard) {
-  const creatorProfileHodlers = document.querySelector('creator-profile-hodlers')
-  if (!profileDetails || !creatorProfileHodlers || observingHolders) return
+function highlightUserInHolderList (node, loggedInUsername) {
+  try {
+    const avatarAndName = node.firstChild.firstChild.firstChild
+    const holderUsername = avatarAndName.textContent.trim().replaceAll('.', '')
+    if (loggedInUsername === holderUsername) {
+      node.className = 'light-grey-divider'
+    }
+  } catch (e) { }
+}
 
+const addHolderEnrichments = function () {
+  const topCard = document.querySelector('creator-profile-top-card')
+  const creatorProfileHodlers = document.querySelector('creator-profile-hodlers')
+  if (!creatorProfileHodlers || observingHolders || !topCard) return
   const holdersList = creatorProfileHodlers.firstElementChild
+
+  // Before the list loads, it has an "empty" view
+  if (holdersList.childElementCount === 1) return
+
   const pageUsername = getUsernameFromUrl()
   const loggedInUsername = getLoggedInUsername()
   const circulation = getCoinsInCirculation(topCard)
 
+  const firstHodlerNode = holdersList.childNodes.item(1)
+  const firstAvatarAndName = firstHodlerNode.firstChild.firstChild.firstChild
+  const firstHolderName = firstAvatarAndName.textContent.trim().replaceAll('.', '')
+  const holdsOwnCoin =  pageUsername.toLowerCase().startsWith(firstHolderName.toLowerCase())
+
+  try {
+    // Only the first few holders items are initially loaded...
+    const childNodes = holdersList.childNodes
+    for (let i = 1; i < childNodes.length; i++) {
+      const node = childNodes.item(i)
+      if (!node.dataset) continue
+
+      const index = Number(node.dataset.sid)
+      highlightUserInHolderList(node, loggedInUsername)
+      addHolderPositionRank(node, index, holdsOwnCoin)
+      addHolderPercentage(node, index, circulation)
+    }
+  } catch (e) { console.log(e) }
+
+  // observe the rest
   const config = { childList: true, subtree: false }
   new MutationObserver((mutations) => {
-    const firstHodlerDiv = holdersList.children.item(1)
-    const firstAvatarAndName = firstHodlerDiv.firstChild.firstChild
-    const firstHolderName = firstAvatarAndName.textContent.trim().replaceAll('.', '')
-    let userHoldsOwnCoin = pageUsername.startsWith(firstHolderName.toLowerCase())
-
     mutations.forEach(mutation => {
       Array.from(mutation.addedNodes, node => {
         const index = Number(node.dataset.sid)
         highlightUserInHolderList(node, loggedInUsername)
-        addHolderPositionRank(node, index, userHoldsOwnCoin)
+        addHolderPositionRank(node, index, holdsOwnCoin)
         addHolderPercentage(node, index, circulation)
       })
     })
   }).observe(holdersList, config)
-
   observingHolders = true
 }
 
-const getUsernameFromUrl = function () {
-  const segments = new URL(document.location).pathname.split('/')
-  return segments.pop() || segments.pop()
-}
+const addFollowsYouBadgeProfile = function (userDataDiv, loggedInProfile, followingList) {
+  if (!userDataDiv || !loggedInProfile | !followingList) return
 
-const addProfileEnrichmentsFromUser = function (topCard) {
-  if (!topCard) return
+  const usernameDiv = userDataDiv.firstElementChild
+  if (!usernameDiv) return
 
-  const username = getUsernameFromUrl()
-  getProfile(username)
-    .then(profile => {
-      addNativeCoinPrice(topCard, profile)
-      addFounderReward(topCard, profile)
-    }).catch(() => {})
-}
+  const loggedInKey = loggedInProfile.PublicKeyBase58Check
+  let followsYou = followingList[loggedInKey]
+  if (followsYou) {
+    const followsYouSpan = document.createElement('span')
+    followsYouSpan.className = 'badge badge-pill badge-secondary ml-3 fs-12px text-grey5'
+    followsYouSpan.innerText = 'Follows you'
 
-const getLoggedInProfile = function () {
-  let promise
-  if (loggedInProfile) {
-    promise = Promise.resolve(loggedInProfile)
-  } else {
-    const loggedInUserName = getLoggedInUsername()
-    promise = getProfile(loggedInUserName)
+    usernameDiv.appendChild(followsYouSpan)
   }
-  return promise
 }
 
-const addProfileEnrichmentsFromLoggedInUser = function (topCard) {
-  if (!topCard) return
+const addFollowingCountProfile = function (userDataDiv, followingCount) {
+  if (!userDataDiv || !followingCount) return
 
-  if (document.getElementById(followingCountId)) return
+  const userDataFooter = userDataDiv.lastElementChild
+  if (!userDataFooter) return
 
-  getLoggedInProfile()
-    .then(loggedInProfile => {
-      if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
+  userDataFooter.className = userDataFooter.className + ' mb-1 mt-3'
 
-      const profileUsername = getUsernameFromUrl()
+  const countSpan = document.createElement('span')
+  countSpan.className = 'font-weight-bold'
+  countSpan.innerText = followingCount.toString()
 
-      return getFollowing(profileUsername).then(followingRes => {
-        if (document.getElementById(followingCountId)) return Promise.reject('Already ran')
+  const labelSpan = document.createElement('span')
+  labelSpan.className = 'fc-muted'
+  labelSpan.innerHTML = 'Following&nbsp;&nbsp;'
 
-        const userDataDiv = topCard.firstElementChild.children.item(3)
+  const a = document.createElement('a')
+  a.id = followingCountId
+  a.className = 'link--unstyled'
+  a.href = document.location.pathname + '/following'
+  a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
 
-        const usernameDiv = userDataDiv.firstElementChild
-        const followingList = followingRes.PublicKeyToProfileEntry
-        const loggedInKey = loggedInProfile.PublicKeyBase58Check
+  for (const child of userDataFooter.children) {
+    if (child.tagName === 'DIV' && child.children.length > 1) {
+      const coinPriceLabelDiv = child.children.item(1)
+      if (coinPriceLabelDiv && coinPriceLabelDiv.innerHTML.startsWith('Coin Price')) {
+        userDataFooter.insertBefore(a, child)
+        break
+      }
+    }
+  }
+}
 
-        let followsYou = followingList[loggedInKey] !== undefined
-        if (followsYou) {
-          const followsYouSpan = document.createElement('span')
-          followsYouSpan.className = 'badge badge-pill badge-secondary ml-3 fs-12px text-grey5'
-          followsYouSpan.innerText = 'Follows you'
+const addHodlerBadgeProfile = function (userDataDiv, hodlersList, pubKey) {
+  if (!userDataDiv || !hodlersList | !pubKey) return
 
-          usernameDiv.appendChild(followsYouSpan)
-        }
+  const usernameDiv = userDataDiv.firstElementChild
+  if (!usernameDiv) return
 
-        const userDataFooter = userDataDiv.lastElementChild
-        userDataFooter.className = userDataFooter.className + ' mb-1 mt-3'
+  let hodler = hodlersList.find(user => user.HODLerPublicKeyBase58Check === pubKey)
+  if (hodler) {
+    const isHodlerSpan = document.createElement('span')
+    isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px text-grey5'
+    isHodlerSpan.title = 'Coin holder'
+    isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
+    isHodlerSpan.innerHTML = '<i class="fas fa-coins" aria-hidden="true"></i>'
 
-        const countSpan = document.createElement('span')
-        countSpan.className = 'font-weight-bold'
-        countSpan.innerText = `${followingRes.NumFollowers}`
-
-        const labelSpan = document.createElement('span')
-        labelSpan.className = 'fc-muted'
-        labelSpan.innerHTML = 'Following&nbsp;&nbsp;'
-
-        const a = document.createElement('a')
-        a.id = followingCountId
-        a.className = 'link--unstyled'
-        a.href = document.location.pathname + '/following'
-        a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
-
-        for (const child of userDataFooter.children) {
-          if (child.tagName === 'DIV' && child.children.length > 1) {
-            const coinPriceLabelDiv = child.children.item(1)
-            if (coinPriceLabelDiv.innerHTML.startsWith('Coin Price')) {
-              userDataFooter.insertBefore(a, child)
-              break
-            }
-          }
-        }
-
-        const hodlerLabelId = 'plus-profile-hodler-label'
-        if (document.getElementById(hodlerLabelId)) return
-
-        return getProfile(profileUsername)
-          .then(profile => {
-            if (document.getElementById(hodlerLabelId)) return
-
-            const key = profile.PublicKeyBase58Check
-
-            let hodler = loggedInProfile.UsersThatHODL.find(user => user.HODLerPublicKeyBase58Check === key)
-            if (hodler) {
-              const isHodlerSpan = document.createElement('span')
-              isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px text-grey5'
-              isHodlerSpan.title = 'Coin holder'
-              isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
-              isHodlerSpan.innerHTML = '<i class="fas fa-coins" aria-hidden="true"></i>'
-
-              usernameDiv.appendChild(isHodlerSpan)
-            }
-          })
-          .catch(() => {})
-      })
-    })
-    .catch(() => {})
+    usernameDiv.appendChild(isHodlerSpan)
+  }
 }
 
 const addEditProfileButton = function () {
@@ -569,11 +581,7 @@ const enrichProfile = function () {
   addSendBitCloutMenuItem(profileMenu)
   addSendMessageMenuItem(profileMenu)
 
-  const topCard = document.querySelector('creator-profile-top-card')
-  addProfileEnrichmentsFromUser(topCard)
-  addProfileEnrichmentsFromLoggedInUser(topCard)
-  addHoldersCount(profileDetails)
-  addHolderEnrichments(profileDetails, topCard)
+  addHolderEnrichments()
 }
 
 const enrichWallet = function () {
@@ -675,7 +683,7 @@ const enrichBuy = function () {
       const rewardSpan = rewardDiv.getElementsByTagName('span').item(0)
       rewardSpan.appendChild(feePercentage)
     })
-    .catch(() => {})
+    .catch(e => console.log(e))
 }
 
 const enrichTransfer = function () {
@@ -792,20 +800,79 @@ const appRootObserverCallback = function () {
   }
 }
 
-const updateLoggedInProfile = function () {
-  const username = getLoggedInUsername()
-  if (username) {
-    getProfile(username)
-      .then(profile => {
-        loggedInProfile = profile
-        enrichBalanceBox(profile)
-      })
-      .catch(() => {})
-  }
+const updateUserCreatorCoinPrice = function () {
+  getProfile(getLoggedInUsername())
+    .then(profile => {
+      loggedInProfile = profile
+      enrichBalanceBox(profile)
+    })
+    .catch(() => {})
+}
+
+const getProfileUserDataDiv = function () {
+  const topCard = document.querySelector('creator-profile-top-card')
+  if (!topCard) return undefined
+
+  const topCardContent = topCard.firstElementChild
+  if (!topCardContent) return undefined
+
+  const children = topCardContent.children
+  if (!children || children.length < 4) return undefined
+
+  return children.item(3)
+}
+
+function enrichProfileFromApi () {
+  const pageUsername = getUsernameFromUrl()
+  if (!pageUsername) return
+
+  return getLoggedInProfile()
+    .then(loggedInProfile => {
+      getFollowing(pageUsername)
+        .then(followingRes => {
+          const userDataDiv = getProfileUserDataDiv()
+          if (!userDataDiv) return
+
+          addFollowsYouBadgeProfile(userDataDiv, loggedInProfile, followingRes.PublicKeyToProfileEntry)
+          addFollowingCountProfile(userDataDiv, followingRes.NumFollowers)
+
+          if (getUsernameFromUrl() !== pageUsername) return
+
+          return getProfile(pageUsername)
+            .then(pageProfile => {
+              const userDataDiv = getProfileUserDataDiv()
+              if (!userDataDiv) return
+
+              if (getUsernameFromUrl() !== pageUsername) return
+
+              addNativeCoinPrice(userDataDiv, pageProfile)
+              addFounderReward(userDataDiv, pageProfile)
+              addHoldersCount(pageProfile)
+
+              return Promise.resolve(pageProfile)
+            })
+            .then(pageProfile => {
+              return getHodlers(loggedInProfile.PublicKeyBase58Check, getLoggedInUsername())
+                .then(hodlersList => {
+                  const userDataDiv = getProfileUserDataDiv()
+                  if (!userDataDiv) return
+
+                  addHodlerBadgeProfile(userDataDiv, hodlersList, pageProfile.PublicKeyBase58Check)
+                })
+            })
+        })
+    })
+    .catch(() => {})
 }
 
 const globalContainerObserverCallback = function () {
-  updateLoggedInProfile()
+  updateUserCreatorCoinPrice()
+
+  const profilePage = document.querySelector('app-creator-profile-page')
+  if (profilePage) {
+    enrichProfileFromApi()
+    return
+  }
 }
 
 const init = function () {
@@ -829,7 +896,7 @@ const init = function () {
   }
 
   if (timer) clearInterval(timer)
-  timer = setInterval(updateLoggedInProfile, 60 * 1000)
+  timer = setInterval(updateUserCreatorCoinPrice, 60 * 1000)
 }
 
 init()

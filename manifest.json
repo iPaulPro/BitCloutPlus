@@ -1,12 +1,12 @@
 {
   "name": "BitClout Plus",
   "description": "bitclout.com on steroids",
-  "version": "0.1",
+  "version": "0.3.1",
   "manifest_version": 3,
   "omnibox": { "keyword" : "bc" },
   "content_scripts": [
     {
-      "matches": ["https://*.bitclout.com/*"],
+      "matches": ["https://bitclout.com/*"],
       "js": ["main.js"],
       "css": ["main.css"],
       "run_at": "document_end"
