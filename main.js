@@ -57,10 +57,10 @@ const getLoggedInProfile = function () {
   return promise
 }
 
-function loadCSS(file) {
+function loadCSS(filename) {
   const link = document.createElement("link")
-  link.href = chrome.runtime.getURL(file + '.css')
-  link.id = file
+  link.href = chrome.runtime.getURL(`css/${filename}.css`)
+  link.id = filename
   link.type = "text/css"
   link.rel = "stylesheet"
   document.getElementsByTagName("head")[0].appendChild(link)
@@ -317,6 +317,13 @@ function highlightUserInHolderList (node, loggedInUsername) {
   } catch (e) { }
 }
 
+function replaceAnonAvatarImage (node) {
+  const avatar = node.querySelector('.creator-profile-details__hodler-avatar')
+  if (avatar && avatar.style.backgroundImage.includes('default_profile_pic.png')) {
+    avatar.style.backgroundImage = `url('${chrome.runtime.getURL('img/default_profile_pic.png')}')`
+  }
+}
+
 const addHolderEnrichments = function () {
   const topCard = document.querySelector('creator-profile-top-card')
   const creatorProfileHodlers = document.querySelector('creator-profile-hodlers')
@@ -342,6 +349,7 @@ const addHolderEnrichments = function () {
       const node = childNodes.item(i)
       if (!node.dataset) continue
 
+      replaceAnonAvatarImage(node)
       const index = Number(node.dataset.sid)
       highlightUserInHolderList(node, loggedInUsername)
       addHolderPositionRank(node, index, holdsOwnCoin)
@@ -354,6 +362,7 @@ const addHolderEnrichments = function () {
   new MutationObserver((mutations) => {
     mutations.forEach(mutation => {
       Array.from(mutation.addedNodes, node => {
+        replaceAnonAvatarImage(node)
         const index = Number(node.dataset.sid)
         highlightUserInHolderList(node, loggedInUsername)
         addHolderPositionRank(node, index, holdsOwnCoin)

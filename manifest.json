@@ -31,10 +31,10 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "dark.css"
+        "css/*", "img/*"
       ],
       "matches": [
-        "https://*.bitclout.com/*"
+        "https://bitclout.com/*"
       ]
     }
   ]
