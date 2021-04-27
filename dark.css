@@ -245,3 +245,15 @@ button.btn-secondary {
 .text-muted {
     color: #aaaaaa !important;
 }
+
+.tribute-container {
+    filter: drop-shadow(0 0 1rem #000);
+}
+
+.tribute-container ul {
+    background-color: #0d0d0d !important;
+}
+
+.tribute-container li.highlight {
+    background: #202020 !important;
+}

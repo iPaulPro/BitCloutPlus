@@ -652,12 +652,11 @@ const enrichBuy = function () {
   getLoggedInProfile()
     .then(profile => profile.PublicKeyBase58Check)
     .then(key => {
-
       const exchangingDiv = tradeCreatorTable.children.item(0)
       const exchangingAmountSpan = exchangingDiv.children.item(1)
       const exchangeText = exchangingAmountSpan.innerText.substring(0, exchangingAmountSpan.innerText.indexOf('BitClout'))
       const exchangingAmount = parseFloat(exchangeText.trim())
-      if (exchangingAmount === 0) return Promise.reject()
+      if (exchangingAmount === 0 || isNaN(exchangingAmount)) return Promise.reject()
 
       return fetch('https://api.bitclout.com/buy-or-sell-creator-coin-preview-WVAzTWpGOFFnMlBvWXZhTFA4NjNSZGNW', {
         'headers': reqHeaders,
@@ -779,7 +778,7 @@ function buildTributeUsernameMenuTemplate (item) {
 const addPostUsernameAutocomplete = function () {
   const createPostInputs = document.getElementsByClassName('cdk-textarea-autosize')
   for (let input of createPostInputs) {
-    if (input.dataset.tribute) return
+    if (input.dataset && input.dataset.tribute) return
   }
 
   const tribute = new Tribute({
@@ -791,9 +790,9 @@ const addPostUsernameAutocomplete = function () {
   tribute.attach(createPostInputs)
 }
 
-const addTransferRecipientUsernameAutocomplete = function () {
-  const transferInput = document.querySelectorAll('input[placeholder="Enter a public key or username."]').item(0)
-  if (transferInput.dataset.tribute) return
+const addTransferRecipientUsernameAutocomplete = function (placholder) {
+  const transferInput = document.querySelectorAll(`input[placeholder="${placholder}"]`).item(0)
+  if (!transferInput || transferInput.dataset && transferInput.dataset.tribute) return
 
   const tribute = new Tribute({
     autocompleteMode: true,
@@ -834,6 +833,7 @@ const appRootObserverCallback = function () {
   const tradePage = document.querySelector('trade-creator-page')
   if (tradePage) {
     enrichBuy()
+    addTransferRecipientUsernameAutocomplete("Enter a bitclout public key or recipient")
     return
   }
 
@@ -920,7 +920,8 @@ const globalContainerObserverCallback = function () {
 
   const transferPage = document.querySelector('transfer-bitclout-page')
   if (transferPage) {
-    addTransferRecipientUsernameAutocomplete()
+    addTransferRecipientUsernameAutocomplete("Enter a public key or username.")
+    return
   }
 }
 
