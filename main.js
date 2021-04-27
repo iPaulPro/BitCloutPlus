@@ -917,20 +917,36 @@ function enrichProfileFromApi () {
     .catch(() => {})
 }
 
+function observeProfileInnerContent () {
+  const globalCenterInner = document.getElementsByClassName('global__center__inner')
+  if (globalCenterInner && globalCenterInner.length > 0) {
+    const observerConfig = { childList: true, subtree: false }
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        Array.from(mutation.addedNodes, node => {
+          if (node.nodeName !== 'SIMPLE-CENTER-LOADER') {
+            enrichProfileFromApi()
+          }
+        })
+      })
+    })
+    observer.observe(globalCenterInner[0].firstElementChild, observerConfig)
+  }
+}
+
 const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
   addPostUsernameAutocomplete()
 
   const profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
-    enrichProfileFromApi()
+    observeProfileInnerContent()
     return
   }
 
   const transferPage = document.querySelector('transfer-bitclout-page')
   if (transferPage) {
     addTransferRecipientUsernameAutocomplete("Enter a public key or username.")
-    return
   }
 }
 
