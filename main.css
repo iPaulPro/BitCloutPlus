@@ -4,3 +4,17 @@
     padding-right: 2rem;
     margin: 0 1rem 0 2.5rem;
 }
+
+.tribute-container {
+    filter: drop-shadow(0 0 1rem #CCC);
+}
+
+.tribute-container ul {
+    padding: 8px !important;
+    background: white !important;
+    border-radius: 8px !important;
+}
+
+.tribute-container li.highlight {
+    background: #eee !important;
+}

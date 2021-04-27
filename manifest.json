@@ -3,12 +3,22 @@
   "description": "bitclout.com on steroids",
   "version": "0.3.1",
   "manifest_version": 3,
-  "omnibox": { "keyword" : "bc" },
+  "omnibox": {
+    "keyword": "bc"
+  },
   "content_scripts": [
     {
-      "matches": ["https://bitclout.com/*"],
-      "js": ["main.js"],
-      "css": ["main.css"],
+      "matches": [
+        "https://bitclout.com/*"
+      ],
+      "js": [
+        "lib/tribute/tribute.min.js",
+        "main.js"
+      ],
+      "css": [
+        "lib/tribute/tribute.css",
+        "main.css"
+      ],
       "run_at": "document_end"
     }
   ],
@@ -20,8 +30,12 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": [ "dark.css" ],
-      "matches": [ "https://*.bitclout.com/*" ]
+      "resources": [
+        "dark.css"
+      ],
+      "matches": [
+        "https://*.bitclout.com/*"
+      ]
     }
   ]
 }

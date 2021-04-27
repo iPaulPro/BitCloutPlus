@@ -73,12 +73,7 @@ function unloadCSS(file) {
 
 const reqHeaders = {
   'accept': 'application/json, text/plain, */*',
-  'accept-language': 'en-US,en;q=0.9',
   'content-type': 'application/json',
-  'sec-fetch-dest': 'empty',
-  'sec-fetch-mode': 'cors',
-  'sec-fetch-site': 'same-site',
-  'sec-gpc': '1'
 }
 
 const getProfile = function (username) {
@@ -94,7 +89,6 @@ const getProfile = function (username) {
     'credentials': 'include'
   }).then(res => res.json())
     .then(res => res.Profile)
-    .catch(() => {})
 }
 
 const getFollowing = function (username) {
@@ -110,7 +104,6 @@ const getFollowing = function (username) {
     'mode': 'cors',
     'credentials': 'include'
   }).then(res => res.json())
-    .catch(() => {})
 }
 
 const getHodlers = function (readerPubKey, username) {
@@ -127,7 +120,19 @@ const getHodlers = function (readerPubKey, username) {
     'credentials': 'omit'
   }).then(res => res.json())
     .then(res => res.Hodlers)
-    .catch(() => {})
+}
+
+const searchUsernames = function (query, cb) {
+  return fetch('https://api.bitclout.com/get-profiles', {
+    'headers': reqHeaders,
+    'referrerPolicy': 'no-referrer',
+    'body': JSON.stringify({
+      UsernamePrefix: query,
+      NumToFetch: 6
+    }),
+    'method': 'POST'
+  }).then(res => res.json())
+    .then(res => { cb(res.ProfilesFound) })
 }
 
 const addNativeCoinPrice = function (userDataDiv, profile) {
@@ -342,7 +347,7 @@ const addHolderEnrichments = function () {
       addHolderPositionRank(node, index, holdsOwnCoin)
       addHolderPercentage(node, index, circulation)
     }
-  } catch (e) { console.log(e) }
+  } catch (e) { }
 
   // observe the rest
   const config = { childList: true, subtree: false }
@@ -683,7 +688,7 @@ const enrichBuy = function () {
       const rewardSpan = rewardDiv.getElementsByTagName('span').item(0)
       rewardSpan.appendChild(feePercentage)
     })
-    .catch(e => console.log(e))
+    .catch(() => {})
 }
 
 const enrichTransfer = function () {
@@ -765,6 +770,44 @@ const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
   addDarkModeSwitch()
+}
+
+function buildTributeUsernameMenuTemplate (item) {
+  return `<img height='32px' width='32px' src='${item.original.ProfilePic}' class='search-bar__avatar'> ` + item.string
+}
+
+const addPostUsernameAutocomplete = function () {
+  const createPostInputs = document.getElementsByClassName('cdk-textarea-autosize')
+  for (let input of createPostInputs) {
+    if (input.dataset.tribute) return
+  }
+
+  const tribute = new Tribute({
+    values: (text, cb) => searchUsernames(text, users => cb(users)),
+    menuItemTemplate: (item) => buildTributeUsernameMenuTemplate(item),
+    fillAttr: 'Username',
+    lookup: 'Username'
+  })
+  tribute.attach(createPostInputs)
+}
+
+const addTransferRecipientUsernameAutocomplete = function () {
+  const transferInput = document.querySelectorAll('input[placeholder="Enter a public key or username."]').item(0)
+  if (transferInput.dataset.tribute) return
+
+  const tribute = new Tribute({
+    autocompleteMode: true,
+    replaceTextSuffix: '',
+    values: (text, cb) => searchUsernames(text, users => cb(users)),
+    menuItemTemplate: (item) => buildTributeUsernameMenuTemplate(item),
+    selectTemplate: (item) => {
+      if (typeof item === 'undefined') return null
+      return item.original.Username
+    },
+    fillAttr: 'Username',
+    lookup: 'Username'
+  })
+  tribute.attach(transferInput)
 }
 
 // Callback function to execute when body mutations are observed
@@ -867,11 +910,24 @@ function enrichProfileFromApi () {
 
 const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
+  addPostUsernameAutocomplete()
 
   const profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
     enrichProfileFromApi()
     return
+  }
+
+  const transferPage = document.querySelector('transfer-bitclout-page')
+  if (transferPage) {
+    addTransferRecipientUsernameAutocomplete()
+  }
+}
+
+const bodyObserverCallback = function () {
+  const modalContainer = document.querySelector('modal-container')
+  if (modalContainer) {
+    addPostUsernameAutocomplete()
   }
 }
 
@@ -888,11 +944,18 @@ const init = function () {
     appRootObserver.observe(appRoot, appRootObserverConfig)
   }
 
-  const globalContainer = document.getElementsByClassName('global__container').item(0)
+  const globalContainer = document.getElementsByClassName('global__container')[0]
   if (globalContainer) {
     const globalObserverConfig = { childList: true, subtree: false }
     const globalObserver = new MutationObserver(globalContainerObserverCallback)
     globalObserver.observe(globalContainer, globalObserverConfig)
+  }
+  
+  const body = document.getElementsByTagName('body')[0]
+  if (body) {
+    const bodyObserverConfig = { childList: true, subtree: false }
+    const bodyObserver = new MutationObserver(bodyObserverCallback)
+    bodyObserver.observe(body, bodyObserverConfig)
   }
 
   if (timer) clearInterval(timer)
