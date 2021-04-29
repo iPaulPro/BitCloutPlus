@@ -122,17 +122,28 @@ const getHodlers = function (readerPubKey, username) {
     .then(res => res.Hodlers)
 }
 
+let controller
+
 const searchUsernames = function (query, cb) {
+  if (controller) {
+    controller.abort()
+  }
+
+  controller = new AbortController()
+  const { signal } = controller
+
   return fetch('https://api.bitclout.com/get-profiles', {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify({
       UsernamePrefix: query,
-      NumToFetch: 6
+      NumToFetch: 4
     }),
-    'method': 'POST'
+    'method': 'POST',
+    'signal': signal
   }).then(res => res.json())
     .then(res => { cb(res.ProfilesFound) })
+    .catch(() => {})
 }
 
 const addNativeCoinPrice = function (userDataDiv, profile) {
@@ -147,12 +158,18 @@ const addNativeCoinPrice = function (userDataDiv, profile) {
     const tooltipAttr = document.createAttribute('data-bs-toggle')
     tooltipAttr.value = 'tooltip'
 
+    let img = document.createElement('img')
+    img.style.width = '11px'
+    img.style.opacity = '0.7'
+    img.style.marginBottom = '2px'
+    img.className = "mr-1"
+    img.src = chrome.runtime.getURL('img/bitclout-logo.svg')
+
     let span = document.createElement('span')
     span.id = nativePriceId
-    span.className = 'fc-muted mr-2 fs-13px'
+    span.className = 'fc-muted mr-2 fs-14px'
     span.style.fontWeight = '500'
-    span.style.cursor = 'pointer'
-    span.innerText = `(${nativePrice})`
+    span.innerHTML = `(${img.outerHTML}${nativePrice})`
     span.title = '$BitClout price'
     span.setAttributeNode(tooltipAttr)
 
@@ -568,6 +585,25 @@ const addSendMessageMenuItem = function (menu) {
   } catch (e) {}
 }
 
+const addHistoryMenuItem = function (menu) {
+  if (!menu) return
+
+  let historyId = 'plus-profile-menu-history'
+  if (document.getElementById(historyId)) return
+
+  try {
+    const a = document.createElement('a')
+    a.id = historyId
+    a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
+    a.innerHTML = '<i class="fas fa-chart-line" aria-hidden="true"></i> Price History '
+
+    const username = getUsernameFromUrl()
+    a.onclick = () => window.location.href = `https://bitcloutsignal.com/history/${username}`
+
+    menu.insertBefore(a, menu.lastElementChild)
+  } catch (e) {}
+}
+
 const getProfileMenu = function () {
   const dropdownMenuElements = document.getElementsByClassName('dropdown-menu')
   let menu
@@ -594,6 +630,7 @@ const enrichProfile = function () {
   const profileMenu = getProfileMenu()
   addSendBitCloutMenuItem(profileMenu)
   addSendMessageMenuItem(profileMenu)
+  addHistoryMenuItem(profileMenu)
 
   addHolderEnrichments()
 }
@@ -622,7 +659,7 @@ const enrichWallet = function () {
 
     const cloutPrice = document.createElement('p')
     cloutPrice.className = 'fc-muted fs-14px ml-3'
-    cloutPrice.innerHTML = `${cloutValue.toFixed(4)}`
+    cloutPrice.innerHTML = `${cloutValue.toFixed(4)} BCLT`
     valueDiv.appendChild(cloutPrice)
 
     const scrollableSection = document.getElementsByClassName('global__mobile-scrollable-section').item(0)
@@ -632,7 +669,7 @@ const enrichWallet = function () {
 
     const cloutSpan = document.createElement('span')
     cloutSpan.className = 'text-muted fs-14px font-weight-normal'
-    cloutSpan.innerHTML = `${(cloutValue + balanceCloutValue).toFixed(4)} <span class="text-muted fs-12px font-weight-normal">BTCLT</span>`
+    cloutSpan.innerHTML = `${(cloutValue + balanceCloutValue).toFixed(4)} <span class="text-muted fs-12px font-weight-normal">BCLT</span>`
 
     const usdSpan = document.createElement('span')
     usdSpan.className = 'fs-16px'
@@ -727,7 +764,7 @@ const enrichBalanceBox = function (profile) {
     const creatorCoinPriceUsdId = 'plus-creator-coin-price-usd'
     const existingElement = document.getElementById(creatorCoinBalanceId)
     if (existingElement) {
-      document.getElementById(creatorCoinPriceId).innerHTML = ` ${nativePrice} BTCLT `
+      document.getElementById(creatorCoinPriceId).innerHTML = ` ${nativePrice} BCLT `
       document.getElementById(creatorCoinPriceUsdId).innerHTML = formatPriceUsd(coinPriceUsd)
       return
     }
@@ -749,7 +786,7 @@ const enrichBalanceBox = function (profile) {
 
     const coinPriceValueDiv = document.createElement('div')
     coinPriceValueDiv.id = creatorCoinPriceId
-    coinPriceValueDiv.innerHTML = ` ${nativePrice} BTCLT `
+    coinPriceValueDiv.innerHTML = ` ${nativePrice} BCLT `
 
     const coinPriceConversionDiv = document.createElement('div')
     coinPriceConversionDiv.className = 'd-flex text-muted'
@@ -781,7 +818,49 @@ const addGlobalEnrichments = function () {
 }
 
 function buildTributeUsernameMenuTemplate (item) {
-  return `<img height='32px' width='32px' src='${item.original.ProfilePic}' class='search-bar__avatar'> ` + item.string
+  const spotPrice = getSpotPrice()
+  const bitcloutPrice = item.original.CoinPriceBitCloutNanos / nanosInBitClout
+
+  const priceDiv = document.createElement('div')
+  priceDiv.className = 'text-muted fs-12px'
+  priceDiv.innerText = `\$${(spotPrice * bitcloutPrice).toFixed(2).toLocaleString()}`
+
+  const verifiedIcon = document.createElement('i')
+  verifiedIcon.className = 'fas fa-check-circle fa-md ml-1 text-primary'
+
+  const reservedIcon = document.createElement('i')
+  reservedIcon.className = 'far fa-clock fa-md ml-1 text-muted'
+
+  let icon
+  if (item.original.IsVerified) {
+    icon = verifiedIcon
+  } else if (item.original.IsReserved) {
+    icon = reservedIcon
+  }
+
+  let username = item.string
+  if (icon) username += icon.outerHTML
+
+  const nameDiv = document.createElement('div')
+  nameDiv.className = 'ml-1 pl-1'
+  nameDiv.innerHTML = username
+
+  nameDiv.appendChild(priceDiv)
+
+  const img = document.createElement('img')
+  img.className = 'tribute-avatar'
+  img.src = item.original.ProfilePic
+
+  const row = document.createElement('div')
+  row.className = 'row no-gutters'
+  row.appendChild(img)
+  row.appendChild(nameDiv)
+
+  return row.outerHTML
+}
+
+function buildLoadingItemTemplate () {
+  return `<div class="row no-gutters fs-15px p-3">Loading...</div>`
 }
 
 const addPostUsernameAutocomplete = function () {
@@ -793,6 +872,7 @@ const addPostUsernameAutocomplete = function () {
   const tribute = new Tribute({
     values: (text, cb) => searchUsernames(text, users => cb(users)),
     menuItemTemplate: (item) => buildTributeUsernameMenuTemplate(item),
+    loadingItemTemplate: buildLoadingItemTemplate(),
     fillAttr: 'Username',
     lookup: 'Username'
   })
@@ -807,6 +887,7 @@ const addTransferRecipientUsernameAutocomplete = function (placholder) {
     autocompleteMode: true,
     replaceTextSuffix: '',
     values: (text, cb) => searchUsernames(text, users => cb(users)),
+    loadingItemTemplate: buildLoadingItemTemplate(),
     menuItemTemplate: (item) => buildTributeUsernameMenuTemplate(item),
     selectTemplate: (item) => {
       if (typeof item === 'undefined') return null

@@ -257,3 +257,7 @@ button.btn-secondary {
 .tribute-container li.highlight {
     background: #202020 !important;
 }
+
+.tribute-container li:not(:last-child) {
+    border-bottom: 1px solid #222222 !important;
+}

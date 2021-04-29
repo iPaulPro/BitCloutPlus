@@ -12,11 +12,11 @@
         "https://bitclout.com/*"
       ],
       "js": [
-        "lib/tribute/tribute.min.js",
+        "vendor/tribute/tribute.min.js",
         "main.js"
       ],
       "css": [
-        "lib/tribute/tribute.css",
+        "vendor/tribute/tribute.css",
         "main.css"
       ],
       "run_at": "document_end"
