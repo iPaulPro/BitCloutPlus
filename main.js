@@ -630,8 +630,6 @@ const enrichProfile = function () {
   let profileDetails = document.querySelector('creator-profile-details')
   if (!profileDetails) return
 
-  addSellButton()
-
   const profileMenu = getProfileMenu()
   addSendBitCloutMenuItem(profileMenu)
   addSendMessageMenuItem(profileMenu)
@@ -976,6 +974,7 @@ function enrichProfileFromApi () {
 
           if (getUsernameFromUrl() !== pageUsername) return
 
+          const loggedInPubKey = loggedInProfile.PublicKeyBase58Check
           return getProfile(pageUsername)
             .then(pageProfile => {
               const userDataDiv = getProfileUserDataDiv()
@@ -990,12 +989,19 @@ function enrichProfileFromApi () {
               return Promise.resolve(pageProfile)
             })
             .then(pageProfile => {
-              return getHodlers(loggedInProfile.PublicKeyBase58Check, getLoggedInUsername())
+              return getHodlers(loggedInPubKey, getLoggedInUsername())
                 .then(hodlersList => {
                   const userDataDiv = getProfileUserDataDiv()
                   if (!userDataDiv) return
 
                   addHodlerBadgeProfile(userDataDiv, hodlersList, pageProfile.PublicKeyBase58Check)
+                })
+            })
+            .then(() => {
+              return getHodlers(loggedInPubKey, pageUsername)
+                .then(hodlersList => {
+                  const loggedInUserIsHodler = hodlersList.filter(hodler => hodler.HODLerPublicKeyBase58Check === loggedInPubKey).length > 0
+                  if (loggedInUserIsHodler) addSellButton()
                 })
             })
         })
