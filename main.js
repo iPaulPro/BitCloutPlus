@@ -11,6 +11,11 @@ let observingHolders = false
 
 const followingCountId = 'plus-profile-following-count'
 
+const dollarFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD'
+})
+
 const getSpotPrice = function () {
   const elementList = document.getElementsByClassName('right-bar-creators__balance-box')
 
@@ -673,8 +678,8 @@ const enrichWallet = function () {
 
     const usdSpan = document.createElement('span')
     usdSpan.className = 'fs-16px'
-    const usdValueText = (usdValue + balanceUsdValue).toLocaleString()
-    usdSpan.innerHTML = `\$${usdValueText} <span class="text-muted fs-14px font-weight-normal">USD</span>`
+    const usdValueText = dollarFormatter.format(usdValue + balanceUsdValue)
+    usdSpan.innerHTML = `${usdValueText} <span class="text-muted fs-14px font-weight-normal">USD</span>`
 
     const totalSpan = document.createElement('span')
     totalSpan.className = 'ml-auto mr-15px'
@@ -748,7 +753,7 @@ const enrichTransfer = function () {
 }
 
 const formatPriceUsd = function (price) {
-  return `\$${price.toFixed(2).toLocaleString()} USD`
+  return `${dollarFormatter.format(price)} USD`
 }
 
 const enrichBalanceBox = function (profile) {
@@ -823,7 +828,7 @@ function buildTributeUsernameMenuTemplate (item) {
 
   const priceDiv = document.createElement('div')
   priceDiv.className = 'text-muted fs-12px'
-  priceDiv.innerText = `\$${(spotPrice * bitcloutPrice).toFixed(2).toLocaleString()}`
+  priceDiv.innerText = `${dollarFormatter.format(spotPrice * bitcloutPrice)}`
 
   const verifiedIcon = document.createElement('i')
   verifiedIcon.className = 'fas fa-check-circle fa-md ml-1 text-primary'
