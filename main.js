@@ -871,17 +871,17 @@ function buildLoadingItemTemplate () {
 const addPostUsernameAutocomplete = function () {
   const createPostInputs = document.getElementsByClassName('cdk-textarea-autosize')
   for (let input of createPostInputs) {
-    if (input.dataset && input.dataset.tribute) return
+    if (input.dataset && !input.dataset.tribute) {
+      const tribute = new Tribute({
+        values: (text, cb) => searchUsernames(text, users => cb(users)),
+        menuItemTemplate: (item) => buildTributeUsernameMenuTemplate(item),
+        loadingItemTemplate: buildLoadingItemTemplate(),
+        fillAttr: 'Username',
+        lookup: 'Username'
+      })
+      tribute.attach(input)
+    }
   }
-
-  const tribute = new Tribute({
-    values: (text, cb) => searchUsernames(text, users => cb(users)),
-    menuItemTemplate: (item) => buildTributeUsernameMenuTemplate(item),
-    loadingItemTemplate: buildLoadingItemTemplate(),
-    fillAttr: 'Username',
-    lookup: 'Username'
-  })
-  tribute.attach(createPostInputs)
 }
 
 const addTransferRecipientUsernameAutocomplete = function (placholder) {
