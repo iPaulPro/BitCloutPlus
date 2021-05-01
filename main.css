@@ -1,7 +1,11 @@
 /* Bootstrap overrides */
 
 creator-profile-top-card .badge-secondary {
-    background-color: #f5f5f5 !important;
+    background-color: #f5f5f5;
+}
+
+bs-dropdown-container .dropdown-menu {
+    min-width: 12rem !important;
 }
 
 /* Vendor overrides */

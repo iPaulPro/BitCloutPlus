@@ -610,20 +610,10 @@ const addHistoryMenuItem = function (menu) {
 }
 
 const getProfileMenu = function () {
-  const dropdownMenuElements = document.getElementsByClassName('dropdown-menu')
-  let menu
+  const dropdownContainer = document.querySelector('bs-dropdown-container')
+  if (!dropdownContainer) return undefined
 
-  try {
-    for (const dropdown of dropdownMenuElements) {
-      const dropDownParent = dropdown.parentElement
-      if (dropDownParent.parentElement.className.includes('js-creator-profile-top-card-container')) {
-        menu = dropdown
-        break
-      }
-    }
-  } catch (e) {}
-
-  return menu
+  return dropdownContainer.getElementsByClassName('dropdown-menu')[0]
 }
 
 const enrichProfile = function () {

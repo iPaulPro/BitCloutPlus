@@ -232,14 +232,11 @@ button.btn-primary {
 /* Added by paulburke */
 
 a.btn-secondary,
-button.btn-secondary {
+button.btn-secondary,
+.badge-secondary {
     color: #fff !important;
     background-color: #333 !important;
     border-color: #333 !important;
-}
-
-.badge-secondary {
-    background-color: #333 !important;
 }
 
 .text-muted {
