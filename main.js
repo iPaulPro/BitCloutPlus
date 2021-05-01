@@ -473,7 +473,7 @@ const addEditProfileButton = function () {
       const profileDiv = button.firstElementChild.lastElementChild
       const profileAnchor = profileDiv.firstElementChild
 
-      if (profileAnchor.innerHTML === 'Profile') {
+      if (profileAnchor.innerHTML.includes('Profile')) {
         const a = document.createElement('a')
         a.id = editProfileButtonId
         a.href = 'update-profile'
