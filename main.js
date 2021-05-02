@@ -613,7 +613,11 @@ const getProfileMenu = function () {
   const dropdownContainer = document.querySelector('bs-dropdown-container')
   if (!dropdownContainer) return undefined
 
-  return dropdownContainer.getElementsByClassName('dropdown-menu')[0]
+  const menu = dropdownContainer.getElementsByClassName('dropdown-menu')[0]
+  if (menu.firstElementChild.innerHTML.includes("Block")) {
+    return menu
+  }
+  return undefined
 }
 
 const enrichProfile = function () {
