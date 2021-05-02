@@ -249,7 +249,7 @@ const addHoldersCount = function (pageProfile) {
   if (!creatorCoinTabHeader) return
 
   const holderDiv = creatorCoinTabHeader.firstElementChild
-  if (!holderDiv || !holderDiv.innerHTML.startsWith('Holders')) return
+  if (!holderDiv || !holderDiv.innerHTML.includes('Holders of')) return
 
   const usersThatHodl = pageProfile.CoinEntry.NumberOfHolders
   const holderCountId = 'plus-profile-holder-count'
