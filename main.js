@@ -8,6 +8,9 @@ const apiBaseUrl = 'https://bitclout.com/api/v0'
 
 let username, timer, loggedInProfile, currentUrl
 
+let identityFrame, identityWindow, identityUsers
+let pendingSignTransactionId, pendingTransactionHex
+
 let observingHolders = false
 
 const followingCountId = 'plus-profile-following-count'
@@ -61,6 +64,12 @@ const getLoggedInProfile = function () {
       })
   }
   return promise
+}
+
+const getCurrentIdentity = () => {
+  if (!identityUsers) return Promise.resolve(undefined)
+
+  return getLoggedInProfile().then(profile => identityUsers[profile.PublicKeyBase58Check])
 }
 
 function loadCSS(filename) {
@@ -127,6 +136,38 @@ const getHodlers = function (readerPubKey, username) {
   }).then(res => res.json())
     .then(res => res.Hodlers)
 }
+
+const submitPost = (pubKey, body) =>
+  fetch('https://api.bitclout.com/submit-post', {
+    'headers': reqHeaders,
+    'referrerPolicy': 'no-referrer',
+    'body': JSON.stringify({
+      UpdaterPublicKeyBase58Check: pubKey,
+      BodyObj: {
+        Body: body
+      },
+      CreatorBasisPoints: 0,
+      StakeMultipleBasisPoints: 12500,
+      IsHidden: false,
+      MinFeeRateNanosPerKB: 1000
+    }),
+    'method': 'POST',
+    'mode': 'cors',
+    'credentials': 'omit'
+  }).then(res => res.json())
+    .then(res => res.TransactionHex)
+
+const submitTransaction = (transactionHex) =>
+  fetch('https://api.bitclout.com/submit-transaction', {
+    'headers': reqHeaders,
+    'referrerPolicy': 'no-referrer',
+    'body': JSON.stringify({
+      TransactionHex: transactionHex
+    }),
+    'method': 'POST',
+    'mode': 'cors',
+    'credentials': 'omit'
+  }).then(res => res.json())
 
 let controller
 
@@ -389,7 +430,7 @@ const addHolderEnrichments = function () {
 }
 
 const addFollowsYouBadgeProfile = function (userDataDiv, loggedInProfile, followingList) {
-  if (!userDataDiv || !loggedInProfile | !followingList) return
+  if (!userDataDiv || !loggedInProfile | !followingList || followingList.length === 0) return
 
   const usernameDiv = userDataDiv.firstElementChild
   if (!usernameDiv) return
@@ -909,6 +950,56 @@ const addTransferRecipientUsernameAutocomplete = function (placholder) {
   tribute.attach(transferInput)
 }
 
+const replacePostClickEvent = () => {
+  console.log('replacePostClickEvent')
+  const maxLength = 1000
+
+  const createPostForm =  document.querySelector('create-post-form')
+  const postInput = createPostForm.querySelector('textarea').value
+
+  if (postInput.length > maxLength || postInput.length === 0) return
+
+  const primaryButtons = createPostForm.getElementsByClassName('btn-primary')
+  let postButton
+  for (let primaryButton of primaryButtons) {
+    if (primaryButton.innerHTML.includes('Post')) {
+      postButton = primaryButton
+      break
+    }
+  }
+
+  postButton.classList.remove('disabled')
+  postButton.onclick = () => {
+    console.log(`Got post on click`)
+    getLoggedInProfile()
+      .then(profile => profile.PublicKeyBase58Check)
+      .then(pubKey => submitPost(pubKey, postInput))
+      .then(transactionHex => {
+        console.log(`Submitted post with transaction ${transactionHex}`)
+        pendingTransactionHex = transactionHex
+
+        getCurrentIdentity()
+          .then(identity => {
+            pendingSignTransactionId = _.UUID.v4()
+            console.log(`Sending sign message with id ${pendingSignTransactionId}`)
+
+            identityFrame.contentWindow.postMessage({
+              id: pendingSignTransactionId,
+              service: 'identity',
+              method: 'sign',
+              payload: {
+                accessLevel: identity ? identity.accessLevel : '',
+                accessLevelHmac: identity ? identity.accessLevelHmac : '',
+                encryptedSeedHex: identity ? identity.encryptedSeedHex : '',
+                transactionHex: transactionHex
+              }
+            }, '*')
+          })
+      })
+      .catch(reason => console.log(reason))
+  }
+}
+
 // Callback function to execute when body mutations are observed
 const appRootObserverCallback = function () {
   if (currentUrl !== window.location.href) {
@@ -974,18 +1065,18 @@ function enrichProfileFromApi () {
       getFollowing(pageUsername)
         .then(followingRes => {
           const userDataDiv = getProfileUserDataDiv()
-          if (!userDataDiv) return
+          if (!userDataDiv) return Promise.reject()
 
           addFollowsYouBadgeProfile(userDataDiv, loggedInProfile, followingRes.PublicKeyToProfileEntry)
           addFollowingCountProfile(userDataDiv, followingRes.NumFollowers)
 
-          if (getUsernameFromUrl() !== pageUsername) return
+          if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
           const loggedInPubKey = loggedInProfile.PublicKeyBase58Check
           return getProfile(pageUsername)
             .then(pageProfile => {
               const userDataDiv = getProfileUserDataDiv()
-              if (!userDataDiv) return
+              if (!userDataDiv) return Promise.reject()
 
               if (getUsernameFromUrl() !== pageUsername) return
 
@@ -996,10 +1087,12 @@ function enrichProfileFromApi () {
               return Promise.resolve(pageProfile)
             })
             .then(pageProfile => {
+              if (!pageProfile) return Promise.reject()
+
               return getHodlers(loggedInPubKey, getLoggedInUsername())
                 .then(hodlersList => {
                   const userDataDiv = getProfileUserDataDiv()
-                  if (!userDataDiv) return
+                  if (!userDataDiv) return Promise.reject()
 
                   addHodlerBadgeProfile(userDataDiv, hodlersList, pageProfile.PublicKeyBase58Check)
                 })
@@ -1046,6 +1139,17 @@ const globalContainerObserverCallback = function () {
   const transferPage = document.querySelector('transfer-bitclout-page')
   if (transferPage) {
     addTransferRecipientUsernameAutocomplete("Enter a public key or username.")
+    return
+  }
+
+  const createPostPage = document.querySelector('app-create-post-page')
+  if (createPostPage) {
+    const createPostForm =  document.querySelector('create-post-form')
+    const postTextArea = createPostForm.querySelector('textarea')
+    postTextArea.addEventListener('change', (event) => {
+      replacePostClickEvent()
+      // if (event.target.value)
+    })
   }
 }
 
@@ -1056,7 +1160,51 @@ const bodyObserverCallback = function () {
   }
 }
 
+const onTransactionSigned = (payload) => {
+  const transactionHex = payload.signedTransactionHex
+  console.log(`Got signed transaction hex: ${transactionHex}`)
+  submitTransaction(transactionHex)
+    .then(res => window.location.href = `posts/${res.PostEntryResponse.PostHashHex}`)
+    .catch(reason => console.log(reason))
+}
+
+const handleLogin = (payload) => {
+  if (identityWindow) {
+    identityWindow.close()
+    identityWindow = null
+  }
+
+  onTransactionSigned(payload)
+}
+
+const handleMessage = (message) => {
+  const { data: { id: id, method: method, payload: payload } } = message
+  console.log(`id: ${id}, method: ${method}, payload: ${JSON.stringify(payload)}`)
+
+  if (payload && payload.users) {
+    identityUsers = payload.users
+  }
+
+  if (method === 'initialize') {
+    identityFrame = document.getElementById("identity")
+  } else if (method === 'login') {
+    handleLogin(payload)
+  } else if (id === pendingSignTransactionId) {
+    pendingSignTransactionId = null
+    if (!payload) return
+
+    if (payload.approvalRequired && pendingTransactionHex) {
+      identityWindow = window.open(`https://identity.bitclout.com/approve?tx=${pendingTransactionHex}`)
+      pendingTransactionHex = null
+    } else if (payload.signedTransactionHex) {
+      onTransactionSigned(payload)
+    }
+  }
+}
+
 const init = function () {
+  window.addEventListener('message', handleMessage)
+
   chrome.storage.sync.get(['darkMode'], value => {
     if (value.darkMode === true) loadCSS('dark')
   })
@@ -1075,7 +1223,7 @@ const init = function () {
     const globalObserver = new MutationObserver(globalContainerObserverCallback)
     globalObserver.observe(globalContainer, globalObserverConfig)
   }
-  
+
   const body = document.getElementsByTagName('body')[0]
   if (body) {
     const bodyObserverConfig = { childList: true, subtree: false }
