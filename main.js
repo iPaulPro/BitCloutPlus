@@ -457,7 +457,7 @@ const addHodlerBadgeProfile = function (userDataDiv, hodlersList, pubKey) {
     isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px text-grey5'
     isHodlerSpan.title = 'Coin holder'
     isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
-    isHodlerSpan.innerHTML = '<i class="fas fa-coins" aria-hidden="true"></i>'
+    isHodlerSpan.innerHTML = '<i class="fas fa-coins"></i>'
 
     usernameDiv.appendChild(isHodlerSpan)
   }
@@ -562,12 +562,12 @@ const addSendBitCloutMenuItem = function (menu) {
     const a = document.createElement('a')
     a.id = sendBitCloutId
     a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-    a.innerHTML = '<i class="fas fa-wallet" aria-hidden="true"></i> Send $BitClout '
+    a.innerHTML = '<i class="fas fa-hand-holding-usd"></i> Send $BitClout '
 
     const username = getUsernameFromUrl()
     a.onclick = () => window.location.href = `send-bitclout?username=${username}`
 
-    menu.insertBefore(a, menu.firstElementChild)
+    menu.insertBefore(a, menu.lastElementChild)
   } catch (e) {}
 }
 
@@ -581,7 +581,7 @@ const addSendMessageMenuItem = function (menu) {
     const a = document.createElement('a')
     a.id = sendMessageId
     a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-    a.innerHTML = '<i class="fas fa-envelope" aria-hidden="true"></i> Message '
+    a.innerHTML = '<i class="fas fa-envelope"></i> Message '
 
     const username = getUsernameFromUrl()
     a.onclick = () => window.location.href = `inbox/${username}`
@@ -600,10 +600,29 @@ const addHistoryMenuItem = function (menu) {
     const a = document.createElement('a')
     a.id = historyId
     a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-    a.innerHTML = '<i class="fas fa-chart-line" aria-hidden="true"></i> Price History '
+    a.innerHTML = '<i class="fas fa-chart-line"></i> Price History '
 
     const username = getUsernameFromUrl()
     a.onclick = () => window.location.href = `https://bitcloutsignal.com/history/${username}`
+
+    menu.insertBefore(a, menu.lastElementChild)
+  } catch (e) {}
+}
+
+const addWalletMenuItem = function (menu) {
+  if (!menu) return
+
+  let walletId = 'plus-profile-menu-wallet'
+  if (document.getElementById(walletId)) return
+
+  try {
+    const a = document.createElement('a')
+    a.id = walletId
+    a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
+    a.innerHTML = '<i class="fas fa-wallet"></i> View Wallet '
+
+    const username = getUsernameFromUrl()
+    a.onclick = () => window.location.href = `https://bitcloutinsights.com/u/${username}`
 
     menu.insertBefore(a, menu.lastElementChild)
   } catch (e) {}
@@ -625,9 +644,10 @@ const enrichProfile = function () {
   if (!profileDetails) return
 
   const profileMenu = getProfileMenu()
-  addSendBitCloutMenuItem(profileMenu)
-  addSendMessageMenuItem(profileMenu)
   addHistoryMenuItem(profileMenu)
+  addWalletMenuItem(profileMenu)
+  addSendMessageMenuItem(profileMenu)
+  addSendBitCloutMenuItem(profileMenu)
 
   addHolderEnrichments()
 }
