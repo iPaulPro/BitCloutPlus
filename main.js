@@ -5,6 +5,7 @@
 
 const nanosInBitClout = 1000000000
 const apiBaseUrl = 'https://bitclout.com/api/v0'
+const maxPostLength = 1000
 
 let username, timer, loggedInProfile, currentUrl
 
@@ -66,11 +67,27 @@ const getLoggedInProfile = function () {
   return promise
 }
 
-const getCurrentIdentity = () => {
-  if (!identityUsers) return Promise.resolve(undefined)
+const getCurrentIdentity = () => getLoggedInProfile()
+  .then(profile => profile.PublicKeyBase58Check)
+  .then(key =>
+    new Promise((resolve, reject) => {
+      chrome.storage.local.get('users', result => {
+        const users = result.users
+        if (!users) {
+          resolve(null)
+          return
+        }
 
-  return getLoggedInProfile().then(profile => identityUsers[profile.PublicKeyBase58Check])
-}
+        const loggedInUserIdentity = users[key]
+        if (!loggedInUserIdentity) {
+          resolve(null)
+          return
+        }
+
+        resolve(loggedInUserIdentity)
+      })
+    })
+  )
 
 function loadCSS(filename) {
   const link = document.createElement("link")
@@ -137,25 +154,33 @@ const getHodlers = function (readerPubKey, username) {
     .then(res => res.Hodlers)
 }
 
-const submitPost = (pubKey, body) =>
-  fetch('https://api.bitclout.com/submit-post', {
+const submitPost = (pubKey, input, image, video) => {
+  const bodyObj = {
+    Body: input
+  }
+  if (image) bodyObj.Images = [ image ]
+
+  const body = {
+    UpdaterPublicKeyBase58Check: pubKey,
+    BodyObj: bodyObj,
+    CreatorBasisPoints: 0,
+    StakeMultipleBasisPoints: 12500,
+    IsHidden: false,
+    MinFeeRateNanosPerKB: 1000
+  }
+
+  if (video) body.PostExtraData = { EmbedVideoURL: video }
+
+  return fetch('https://api.bitclout.com/submit-post', {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
-    'body': JSON.stringify({
-      UpdaterPublicKeyBase58Check: pubKey,
-      BodyObj: {
-        Body: body
-      },
-      CreatorBasisPoints: 0,
-      StakeMultipleBasisPoints: 12500,
-      IsHidden: false,
-      MinFeeRateNanosPerKB: 1000
-    }),
+    'body': JSON.stringify(body),
     'method': 'POST',
     'mode': 'cors',
     'credentials': 'omit'
   }).then(res => res.json())
     .then(res => res.TransactionHex)
+}
 
 const submitTransaction = (transactionHex) =>
   fetch('https://api.bitclout.com/submit-transaction', {
@@ -866,6 +891,9 @@ const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
   addDarkModeSwitch()
+
+  const createPostForm = document.querySelector('create-post-form')
+  replacePostBtnClickEvent(createPostForm)
 }
 
 function buildTributeUsernameMenuTemplate (item) {
@@ -950,16 +978,78 @@ const addTransferRecipientUsernameAutocomplete = function (placholder) {
   tribute.attach(transferInput)
 }
 
-const replacePostClickEvent = () => {
-  console.log('replacePostClickEvent')
-  const maxLength = 1000
+const sendSignTransactionMsg = (identity, transactionHex, id) => {
+  const payload = {
+    transactionHex: transactionHex
+  }
+
+  if (identity) {
+    payload.accessLevel = identity.accessLevel
+    payload.accessLevelHmac = identity.accessLevelHmac
+    payload.encryptedSeedHex = identity.encryptedSeedHex
+  }
+
+  identityFrame.contentWindow.postMessage({
+    id: id,
+    service: 'identity',
+    method: 'sign',
+    payload: payload
+  }, '*')
+}
+
+const onPostButtonClick = (postButton) => {
+  if (!postButton) return
 
   const createPostForm =  document.querySelector('create-post-form')
-  const postInput = createPostForm.querySelector('textarea').value
+  if (!createPostForm) return
 
-  if (postInput.length > maxLength || postInput.length === 0) return
+  const postTextArea = createPostForm.querySelector('textarea')
+  if (!postTextArea) return
 
-  const primaryButtons = createPostForm.getElementsByClassName('btn-primary')
+  const postBody = postTextArea.value
+  if (!postBody) return
+
+  postButton.classList.add('disabled')
+
+  const spinnerAlt = document.createElement('span')
+  spinnerAlt.className = 'sr-only'
+  spinnerAlt.innerText = 'Working...'
+
+  const spinner = document.createElement('div')
+  spinner.className = 'spinner-border spinner-border-sm text-light'
+  spinner.dataset.role = 'status'
+  spinner.appendChild(spinnerAlt)
+
+  postButton.innerHTML = spinner.outerHTML
+
+  const postImage = createPostForm.getElementsByClassName('feed-post__image').item(0)
+  const image = (postImage && !postImage.src.startsWith('http')) ? postImage.src : undefined
+
+  const postVideo = createPostForm.querySelector('input[type="url"]')
+  const videoUrl = postVideo ? postVideo.value : undefined
+
+  getLoggedInProfile()
+    .then(profile => profile.PublicKeyBase58Check)
+    .then(pubKey => submitPost(pubKey, postBody, image, videoUrl))
+    .then(transactionHex => {
+      if (!transactionHex) return Promise.reject('Error creating submit-post transaction')
+
+      pendingTransactionHex = transactionHex
+
+      return getCurrentIdentity()
+        .then(identity => {
+          pendingSignTransactionId = _.UUID.v4()
+          sendSignTransactionMsg(identity, transactionHex, pendingSignTransactionId)
+        })
+    })
+    .catch(reason => {
+      postButton.classList.remove('disabled')
+      postButton.innerHTML = 'Post'
+    })
+}
+
+const getPostButton = (container) => {
+  const primaryButtons = container.getElementsByClassName('btn-primary')
   let postButton
   for (let primaryButton of primaryButtons) {
     if (primaryButton.innerHTML.includes('Post')) {
@@ -967,37 +1057,57 @@ const replacePostClickEvent = () => {
       break
     }
   }
+  return postButton
+}
 
-  postButton.classList.remove('disabled')
-  postButton.onclick = () => {
-    console.log(`Got post on click`)
-    getLoggedInProfile()
-      .then(profile => profile.PublicKeyBase58Check)
-      .then(pubKey => submitPost(pubKey, postInput))
-      .then(transactionHex => {
-        console.log(`Submitted post with transaction ${transactionHex}`)
-        pendingTransactionHex = transactionHex
+const replacePostBtnClickEvent = (createPostForm) => {
+  if (!createPostForm) return
 
-        getCurrentIdentity()
-          .then(identity => {
-            pendingSignTransactionId = _.UUID.v4()
-            console.log(`Sending sign message with id ${pendingSignTransactionId}`)
+  const id = 'plus-post-btn'
+  if (document.getElementById(id)) return
 
-            identityFrame.contentWindow.postMessage({
-              id: pendingSignTransactionId,
-              service: 'identity',
-              method: 'sign',
-              payload: {
-                accessLevel: identity ? identity.accessLevel : '',
-                accessLevelHmac: identity ? identity.accessLevelHmac : '',
-                encryptedSeedHex: identity ? identity.encryptedSeedHex : '',
-                transactionHex: transactionHex
-              }
-            }, '*')
-          })
-      })
-      .catch(reason => console.log(reason))
-  }
+  const postTextArea = createPostForm.querySelector('textarea')
+  if (!postTextArea) return
+
+  const postButton = getPostButton(createPostForm)
+  if (!postButton) return
+
+  postButton.id = id
+  postButton.onclick = () => onPostButtonClick(postButton)
+}
+
+const addPostTextAreaListener = (container) => {
+  if (!container) return
+
+  const postTextArea = container.querySelector('textarea')
+  if (!postTextArea) return
+
+  const characterCounter = container.getElementsByClassName('feed-create-post__character-counter').item(0)
+  const postButton = getPostButton(container)
+
+  postTextArea.addEventListener('input', (event) => {
+    const characterCount = postTextArea.value.length
+    characterCounter.innerText = `${characterCount} / ${maxPostLength}`
+
+    if (characterCount > maxPostLength) {
+      postButton.classList.add('disabled')
+      characterCounter.classList.add('fc-red')
+      characterCounter.classList.remove('text-grey8A')
+      characterCounter.classList.remove('text-warning')
+    } else if (characterCount === 0) {
+      postButton.classList.add('disabled')
+    } else if (characterCount > 280) {
+      postButton.classList.remove('disabled')
+      characterCounter.classList.remove('fc-red')
+      characterCounter.classList.remove('text-grey8A')
+      characterCounter.classList.add('text-warning')
+    } else {
+      postButton.classList.remove('disabled')
+      characterCounter.classList.remove('fc-red')
+      characterCounter.classList.add('text-grey8A')
+      characterCounter.classList.remove('text-warning')
+    }
+  })
 }
 
 // Callback function to execute when body mutations are observed
@@ -1130,6 +1240,9 @@ const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
   addPostUsernameAutocomplete()
 
+  const createPostForm = document.querySelector('create-post-form')
+  addPostTextAreaListener(createPostForm)
+
   const profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
     observeProfileInnerContent()
@@ -1139,17 +1252,6 @@ const globalContainerObserverCallback = function () {
   const transferPage = document.querySelector('transfer-bitclout-page')
   if (transferPage) {
     addTransferRecipientUsernameAutocomplete("Enter a public key or username.")
-    return
-  }
-
-  const createPostPage = document.querySelector('app-create-post-page')
-  if (createPostPage) {
-    const createPostForm =  document.querySelector('create-post-form')
-    const postTextArea = createPostForm.querySelector('textarea')
-    postTextArea.addEventListener('change', (event) => {
-      replacePostClickEvent()
-      // if (event.target.value)
-    })
   }
 }
 
@@ -1157,15 +1259,26 @@ const bodyObserverCallback = function () {
   const modalContainer = document.querySelector('modal-container')
   if (modalContainer) {
     addPostUsernameAutocomplete()
+    addPostTextAreaListener(modalContainer)
   }
 }
 
 const onTransactionSigned = (payload) => {
+  if (!payload) return
+
   const transactionHex = payload.signedTransactionHex
-  console.log(`Got signed transaction hex: ${transactionHex}`)
+  if (!transactionHex) return
+
   submitTransaction(transactionHex)
-    .then(res => window.location.href = `posts/${res.PostEntryResponse.PostHashHex}`)
-    .catch(reason => console.log(reason))
+    .then(res => {
+      const modalContainer = document.querySelector('modal-container')
+      if (modalContainer) {
+        modalContainer.modal('hide')
+      } else {
+        window.location.href = `posts/${res.PostEntryResponse.PostHashHex}`
+      }
+    })
+    .catch(() => {})
 }
 
 const handleLogin = (payload) => {
@@ -1174,16 +1287,26 @@ const handleLogin = (payload) => {
     identityWindow = null
   }
 
-  onTransactionSigned(payload)
+  chrome.storage.local.set({ users: payload.users })
+
+  if (payload.signedTransactionHex) {
+    onTransactionSigned(payload)
+  }
+}
+
+function handleUnknownMessage (payload) {
+  if (!payload) return
+
+  if (payload.approvalRequired && pendingTransactionHex) {
+    identityWindow = window.open(`https://identity.bitclout.com/approve?tx=${pendingTransactionHex}`, null, 'toolbar=no, width=800, height=1000, top=0, left=0')
+    pendingTransactionHex = null
+  } else if (payload.signedTransactionHex) {
+    onTransactionSigned(payload)
+  }
 }
 
 const handleMessage = (message) => {
   const { data: { id: id, method: method, payload: payload } } = message
-  console.log(`id: ${id}, method: ${method}, payload: ${JSON.stringify(payload)}`)
-
-  if (payload && payload.users) {
-    identityUsers = payload.users
-  }
 
   if (method === 'initialize') {
     identityFrame = document.getElementById("identity")
@@ -1191,14 +1314,7 @@ const handleMessage = (message) => {
     handleLogin(payload)
   } else if (id === pendingSignTransactionId) {
     pendingSignTransactionId = null
-    if (!payload) return
-
-    if (payload.approvalRequired && pendingTransactionHex) {
-      identityWindow = window.open(`https://identity.bitclout.com/approve?tx=${pendingTransactionHex}`)
-      pendingTransactionHex = null
-    } else if (payload.signedTransactionHex) {
-      onTransactionSigned(payload)
-    }
+    handleUnknownMessage(payload)
   }
 }
 
