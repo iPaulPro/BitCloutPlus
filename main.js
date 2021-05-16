@@ -158,7 +158,7 @@ const submitPost = (pubKey, input, image, video) => {
   const bodyObj = {
     Body: input
   }
-  if (image) bodyObj.Images = [ image ]
+  if (image) bodyObj.ImageURLs = [ image ]
 
   const body = {
     UpdaterPublicKeyBase58Check: pubKey,
@@ -614,6 +614,8 @@ const addDarkModeSwitch = function () {
 }
 
 const addSendBitCloutMenuItem = function (menu) {
+  if (!menu) return
+
   let sendBitCloutId = 'plus-profile-menu-send-bitclout'
   if (document.getElementById(sendBitCloutId)) return
 
@@ -891,9 +893,7 @@ const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
   addDarkModeSwitch()
-
-  const createPostForm = document.querySelector('create-post-form')
-  replacePostBtnClickEvent(createPostForm)
+  replacePostBtnClickEvent()
 }
 
 function buildTributeUsernameMenuTemplate (item) {
@@ -1023,7 +1023,7 @@ const onPostButtonClick = (postButton) => {
   postButton.innerHTML = spinner.outerHTML
 
   const postImage = createPostForm.getElementsByClassName('feed-post__image').item(0)
-  const image = (postImage && !postImage.src.startsWith('http')) ? postImage.src : undefined
+  const image = (postImage && postImage.src.includes('images.bitclout.com')) ? postImage.src : undefined
 
   const postVideo = createPostForm.querySelector('input[type="url"]')
   const videoUrl = postVideo ? postVideo.value : undefined
@@ -1060,14 +1060,12 @@ const getPostButton = (container) => {
   return postButton
 }
 
-const replacePostBtnClickEvent = (createPostForm) => {
+const replacePostBtnClickEvent = () => {
+  const createPostForm = document.querySelector('create-post-form')
   if (!createPostForm) return
 
   const id = 'plus-post-btn'
-  if (document.getElementById(id)) return
-
-  const postTextArea = createPostForm.querySelector('textarea')
-  if (!postTextArea) return
+  if (createPostForm.querySelector(id)) return
 
   const postButton = getPostButton(createPostForm)
   if (!postButton) return
@@ -1076,7 +1074,8 @@ const replacePostBtnClickEvent = (createPostForm) => {
   postButton.onclick = () => onPostButtonClick(postButton)
 }
 
-const addPostTextAreaListener = (container) => {
+const addPostTextAreaListener = () => {
+  const container = document.querySelector('create-post-form')
   if (!container) return
 
   const postTextArea = container.querySelector('textarea')
@@ -1240,8 +1239,7 @@ const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
   addPostUsernameAutocomplete()
 
-  const createPostForm = document.querySelector('create-post-form')
-  addPostTextAreaListener(createPostForm)
+  addPostTextAreaListener()
 
   const profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
@@ -1259,7 +1257,6 @@ const bodyObserverCallback = function () {
   const modalContainer = document.querySelector('modal-container')
   if (modalContainer) {
     addPostUsernameAutocomplete()
-    addPostTextAreaListener(modalContainer)
   }
 }
 
@@ -1269,16 +1266,14 @@ const onTransactionSigned = (payload) => {
   const transactionHex = payload.signedTransactionHex
   if (!transactionHex) return
 
-  submitTransaction(transactionHex)
-    .then(res => {
-      const modalContainer = document.querySelector('modal-container')
-      if (modalContainer) {
-        modalContainer.modal('hide')
-      } else {
-        window.location.href = `posts/${res.PostEntryResponse.PostHashHex}`
-      }
-    })
-    .catch(() => {})
+  submitTransaction(transactionHex).then(res => {
+    const response = res.PostEntryResponse
+    if (response && response.PostHashHex) {
+      window.location.href = `posts/${response.PostHashHex}`
+    } else {
+      window.location.href = `u/${getLoggedInUsername()}`
+    }
+  }).catch(() => {})
 }
 
 const handleLogin = (payload) => {
