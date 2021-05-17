@@ -171,7 +171,7 @@ const submitPost = (pubKey, input, image, video) => {
 
   if (video) body.PostExtraData = { EmbedVideoURL: video }
 
-  return fetch('https://api.bitclout.com/submit-post', {
+  return fetch(`${apiBaseUrl}/submit-post`, {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify(body),
@@ -183,7 +183,7 @@ const submitPost = (pubKey, input, image, video) => {
 }
 
 const submitTransaction = (transactionHex) =>
-  fetch('https://api.bitclout.com/submit-transaction', {
+  fetch(`${apiBaseUrl}/submit-transaction`, {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify({
