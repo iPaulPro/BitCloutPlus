@@ -288,7 +288,8 @@ function addHolderPositionRank (node, index, userHoldsOwnCoin) {
     } else {
       span = document.createElement('span')
       span.id = itemId
-      span.className = `${holderPositionClassName} fc-muted fs-14px align-items-start col-2 pl-0`
+      span.className = `${holderPositionClassName} fc-muted fs-14px align-items-start d-flex pl-0 pr-2 mr-1`
+      span.style.minWidth = '2em'
 
       const avatarAndName = node.firstChild.firstChild.firstChild
       avatarAndName.insertBefore(span, avatarAndName.firstElementChild)
@@ -331,19 +332,12 @@ function getCoinsInCirculation (topCard) {
 
 function highlightUserInHolderList (node, loggedInUsername) {
   try {
-    const avatarAndName = node.firstChild.firstChild.firstChild
-    const holderUsername = avatarAndName.textContent.trim().replaceAll('.', '')
+    const nameSpan = node.querySelector('.text-truncate')
+    const holderUsername = nameSpan.innerText
     if (loggedInUsername === holderUsername) {
       node.className = 'light-grey-divider'
     }
   } catch (e) { }
-}
-
-function replaceAnonAvatarImage (node) {
-  const avatar = node.querySelector('.creator-profile-details__hodler-avatar')
-  if (avatar && avatar.style.backgroundImage.includes('default_profile_pic.png')) {
-    avatar.style.backgroundImage = `url('${chrome.runtime.getURL('img/default_profile_pic.png')}')`
-  }
 }
 
 const addHolderEnrichments = function () {
@@ -371,7 +365,6 @@ const addHolderEnrichments = function () {
       const node = childNodes.item(i)
       if (!node.dataset) continue
 
-      replaceAnonAvatarImage(node)
       const index = Number(node.dataset.sid)
       highlightUserInHolderList(node, loggedInUsername)
       addHolderPositionRank(node, index, holdsOwnCoin)
@@ -384,7 +377,6 @@ const addHolderEnrichments = function () {
   new MutationObserver((mutations) => {
     mutations.forEach(mutation => {
       Array.from(mutation.addedNodes, node => {
-        replaceAnonAvatarImage(node)
         const index = Number(node.dataset.sid)
         highlightUserInHolderList(node, loggedInUsername)
         addHolderPositionRank(node, index, holdsOwnCoin)
