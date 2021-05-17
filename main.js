@@ -4,6 +4,7 @@
 // License text available at https://opensource.org/licenses/MIT
 
 const nanosInBitClout = 1000000000
+const apiBaseUrl = 'https://bitclout.com/api/v0'
 
 let username, timer, loggedInProfile, currentUrl
 
@@ -83,7 +84,7 @@ const reqHeaders = {
 
 const getProfile = function (username) {
   if (!username) return Promise.reject('Required parameter username is undefined')
-  return fetch('https://api.bitclout.com/get-single-profile', {
+  return fetch(`${apiBaseUrl}/get-single-profile`, {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify({
@@ -97,7 +98,7 @@ const getProfile = function (username) {
 }
 
 const getFollowing = function (username) {
-  return fetch('https://api.bitclout.com/get-follows-stateless', {
+  return fetch(`${apiBaseUrl}/get-follows-stateless`, {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify({
@@ -112,7 +113,7 @@ const getFollowing = function (username) {
 }
 
 const getHodlers = function (readerPubKey, username) {
-  return fetch('https://api.bitclout.com/get-hodlers-for-public-key', {
+  return fetch(`${apiBaseUrl}/get-hodlers-for-public-key`, {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify({
@@ -137,7 +138,7 @@ const searchUsernames = function (query, cb) {
   controller = new AbortController()
   const { signal } = controller
 
-  return fetch('https://api.bitclout.com/get-profiles', {
+  return fetch(`${apiBaseUrl}/get-profiles`, {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
     'body': JSON.stringify({
@@ -713,7 +714,7 @@ const enrichBuy = function () {
       const exchangingAmount = parseFloat(exchangeText.trim())
       if (exchangingAmount === 0 || isNaN(exchangingAmount)) return Promise.reject()
 
-      return fetch('https://api.bitclout.com/buy-or-sell-creator-coin-preview-WVAzTWpGOFFnMlBvWXZhTFA4NjNSZGNW', {
+      return fetch(`${apiBaseUrl}/buy-or-sell-creator-coin-preview-WVAzTWpGOFFnMlBvWXZhTFA4NjNSZGNW`, {
         'headers': reqHeaders,
         'referrerPolicy': 'no-referrer',
         'body': JSON.stringify({
