@@ -5,6 +5,8 @@
 
 const nanosInBitClout = 1000000000
 const apiBaseUrl = 'https://bitclout.com/api/v0'
+
+let longPostEnabled = true
 const maxPostLength = 1000
 
 let username, timer, loggedInProfile, currentUrl
@@ -1000,10 +1002,10 @@ const sendSignTransactionMsg = (identity, transactionHex, id) => {
 const onPostButtonClick = (postButton) => {
   if (!postButton) return
 
-  const createPostForm =  document.querySelector('create-post-form')
-  if (!createPostForm) return
+  const container =  document.querySelector('feed-create-post')
+  if (!container) return
 
-  const postTextArea = createPostForm.querySelector('textarea')
+  const postTextArea = container.querySelector('textarea')
   if (!postTextArea) return
 
   const postBody = postTextArea.value
@@ -1022,10 +1024,10 @@ const onPostButtonClick = (postButton) => {
 
   postButton.innerHTML = spinner.outerHTML
 
-  const postImage = createPostForm.getElementsByClassName('feed-post__image').item(0)
+  const postImage = container.getElementsByClassName('feed-post__image').item(0)
   const image = (postImage && postImage.src.includes('images.bitclout.com')) ? postImage.src : undefined
 
-  const postVideo = createPostForm.querySelector('input[type="url"]')
+  const postVideo = container.querySelector('input[type="url"]')
   const videoUrl = postVideo ? postVideo.value : undefined
 
   getLoggedInProfile()
@@ -1061,21 +1063,21 @@ const getPostButton = (container) => {
 }
 
 const replacePostBtnClickEvent = () => {
-  const createPostForm = document.querySelector('create-post-form')
-  if (!createPostForm) return
+  if (!longPostEnabled) return
 
-  const id = 'plus-post-btn'
-  if (createPostForm.querySelector(id)) return
+  const container = document.querySelector('feed-create-post')
+  if (!container) return
 
-  const postButton = getPostButton(createPostForm)
+  const postButton = getPostButton(container)
   if (!postButton) return
 
-  postButton.id = id
   postButton.onclick = () => onPostButtonClick(postButton)
 }
 
 const addPostTextAreaListener = () => {
-  const container = document.querySelector('create-post-form')
+  if (!longPostEnabled) return
+
+  const container = document.querySelector('feed-create-post')
   if (!container) return
 
   const postTextArea = container.querySelector('textarea')
@@ -1318,6 +1320,14 @@ const init = function () {
 
   chrome.storage.sync.get(['darkMode'], value => {
     if (value.darkMode === true) loadCSS('dark')
+  })
+
+  chrome.storage.local.get(['longPost'], items => {
+    if (items.longPost === undefined) {
+      chrome.storage.local.set({ longPost: true })
+    } else {
+      longPostEnabled = items.longPost
+    }
   })
 
   // app-root is dynamically loaded, so we observe changes to the child list
