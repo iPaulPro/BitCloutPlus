@@ -266,3 +266,11 @@ button.btn-secondary,
 .fc-blue, .fc-blue .icon-diamond {
     color: #5a88d7;
 }
+
+.message-thread__unread-light-blue {
+    background-color: #2d2d2d
+}
+
+.messages-inbox__selected-thread {
+    background-color: #181818;
+}
