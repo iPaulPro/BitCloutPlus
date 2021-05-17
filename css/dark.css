@@ -258,3 +258,11 @@ button.btn-secondary,
 .tribute-container li:not(:last-child) {
     border-bottom: 1px solid #222222 !important;
 }
+
+.fc-green, .fc-green .icon-repost {
+    color: #19b028;
+}
+
+.fc-blue, .fc-blue .icon-diamond {
+    color: #5a88d7;
+}
