@@ -6,7 +6,13 @@
 const nanosInBitClout = 1000000000
 const apiBaseUrl = 'https://bitclout.com/api/v0'
 
+let longPostEnabled = true
+const maxPostLength = 1000
+
 let username, timer, loggedInProfile, currentUrl
+
+let identityFrame, identityWindow, identityUsers
+let pendingSignTransactionId, pendingTransactionHex
 
 let observingHolders = false
 
@@ -62,6 +68,28 @@ const getLoggedInProfile = function () {
   }
   return promise
 }
+
+const getCurrentIdentity = () => getLoggedInProfile()
+  .then(profile => profile.PublicKeyBase58Check)
+  .then(key =>
+    new Promise((resolve, reject) => {
+      chrome.storage.local.get('users', result => {
+        const users = result.users
+        if (!users) {
+          resolve(null)
+          return
+        }
+
+        const loggedInUserIdentity = users[key]
+        if (!loggedInUserIdentity) {
+          resolve(null)
+          return
+        }
+
+        resolve(loggedInUserIdentity)
+      })
+    })
+  )
 
 function loadCSS(filename) {
   const link = document.createElement("link")
@@ -127,6 +155,46 @@ const getHodlers = function (readerPubKey, username) {
   }).then(res => res.json())
     .then(res => res.Hodlers)
 }
+
+const submitPost = (pubKey, input, image, video) => {
+  const bodyObj = {
+    Body: input
+  }
+  if (image) bodyObj.ImageURLs = [ image ]
+
+  const body = {
+    UpdaterPublicKeyBase58Check: pubKey,
+    BodyObj: bodyObj,
+    CreatorBasisPoints: 0,
+    StakeMultipleBasisPoints: 12500,
+    IsHidden: false,
+    MinFeeRateNanosPerKB: 1000
+  }
+
+  if (video) body.PostExtraData = { EmbedVideoURL: video }
+
+  return fetch(`${apiBaseUrl}/submit-post`, {
+    'headers': reqHeaders,
+    'referrerPolicy': 'no-referrer',
+    'body': JSON.stringify(body),
+    'method': 'POST',
+    'mode': 'cors',
+    'credentials': 'omit'
+  }).then(res => res.json())
+    .then(res => res.TransactionHex)
+}
+
+const submitTransaction = (transactionHex) =>
+  fetch(`${apiBaseUrl}/submit-transaction`, {
+    'headers': reqHeaders,
+    'referrerPolicy': 'no-referrer',
+    'body': JSON.stringify({
+      TransactionHex: transactionHex
+    }),
+    'method': 'POST',
+    'mode': 'cors',
+    'credentials': 'omit'
+  }).then(res => res.json())
 
 let controller
 
@@ -389,7 +457,7 @@ const addHolderEnrichments = function () {
 }
 
 const addFollowsYouBadgeProfile = function (userDataDiv, loggedInProfile, followingList) {
-  if (!userDataDiv || !loggedInProfile | !followingList) return
+  if (!userDataDiv || !loggedInProfile | !followingList || followingList.length === 0) return
 
   const usernameDiv = userDataDiv.firstElementChild
   if (!usernameDiv) return
@@ -548,6 +616,8 @@ const addDarkModeSwitch = function () {
 }
 
 const addSendBitCloutMenuItem = function (menu) {
+  if (!menu) return
+
   let sendBitCloutId = 'plus-profile-menu-send-bitclout'
   if (document.getElementById(sendBitCloutId)) return
 
@@ -825,6 +895,7 @@ const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
   addDarkModeSwitch()
+  replacePostBtnClickEvent()
 }
 
 function buildTributeUsernameMenuTemplate (item) {
@@ -909,6 +980,137 @@ const addTransferRecipientUsernameAutocomplete = function (placholder) {
   tribute.attach(transferInput)
 }
 
+const sendSignTransactionMsg = (identity, transactionHex, id) => {
+  const payload = {
+    transactionHex: transactionHex
+  }
+
+  if (identity) {
+    payload.accessLevel = identity.accessLevel
+    payload.accessLevelHmac = identity.accessLevelHmac
+    payload.encryptedSeedHex = identity.encryptedSeedHex
+  }
+
+  identityFrame.contentWindow.postMessage({
+    id: id,
+    service: 'identity',
+    method: 'sign',
+    payload: payload
+  }, '*')
+}
+
+const onPostButtonClick = (postButton) => {
+  if (!postButton) return
+
+  const container =  document.querySelector('feed-create-post')
+  if (!container) return
+
+  const postTextArea = container.querySelector('textarea')
+  if (!postTextArea) return
+
+  const postBody = postTextArea.value
+  if (!postBody) return
+
+  postButton.classList.add('disabled')
+
+  const spinnerAlt = document.createElement('span')
+  spinnerAlt.className = 'sr-only'
+  spinnerAlt.innerText = 'Working...'
+
+  const spinner = document.createElement('div')
+  spinner.className = 'spinner-border spinner-border-sm text-light'
+  spinner.dataset.role = 'status'
+  spinner.appendChild(spinnerAlt)
+
+  postButton.innerHTML = spinner.outerHTML
+
+  const postImage = container.getElementsByClassName('feed-post__image').item(0)
+  const image = (postImage && postImage.src.includes('images.bitclout.com')) ? postImage.src : undefined
+
+  const postVideo = container.querySelector('input[type="url"]')
+  const videoUrl = postVideo ? postVideo.value : undefined
+
+  getLoggedInProfile()
+    .then(profile => profile.PublicKeyBase58Check)
+    .then(pubKey => submitPost(pubKey, postBody, image, videoUrl))
+    .then(transactionHex => {
+      if (!transactionHex) return Promise.reject('Error creating submit-post transaction')
+
+      pendingTransactionHex = transactionHex
+
+      return getCurrentIdentity()
+        .then(identity => {
+          pendingSignTransactionId = _.UUID.v4()
+          sendSignTransactionMsg(identity, transactionHex, pendingSignTransactionId)
+        })
+    })
+    .catch(reason => {
+      postButton.classList.remove('disabled')
+      postButton.innerHTML = 'Post'
+    })
+}
+
+const getPostButton = (container) => {
+  const primaryButtons = container.getElementsByClassName('btn-primary')
+  let postButton
+  for (let primaryButton of primaryButtons) {
+    if (primaryButton.innerHTML.includes('Post')) {
+      postButton = primaryButton
+      break
+    }
+  }
+  return postButton
+}
+
+const replacePostBtnClickEvent = () => {
+  if (!longPostEnabled) return
+
+  const container = document.querySelector('feed-create-post')
+  if (!container) return
+
+  const postButton = getPostButton(container)
+  if (!postButton) return
+
+  postButton.onclick = () => onPostButtonClick(postButton)
+}
+
+const addPostTextAreaListener = () => {
+  if (!longPostEnabled) return
+
+  const container = document.querySelector('feed-create-post')
+  if (!container) return
+
+  const postTextArea = container.querySelector('textarea')
+  if (!postTextArea) return
+
+  const characterCounter = container.getElementsByClassName('feed-create-post__character-counter').item(0)
+  const postButton = getPostButton(container)
+
+  postTextArea.addEventListener('input', (event) => {
+    const characterCount = postTextArea.value.length
+    characterCounter.innerText = `${characterCount} / ${maxPostLength}`
+
+    if (characterCount > maxPostLength) {
+      postButton.classList.add('disabled')
+      characterCounter.classList.add('fc-red')
+      characterCounter.classList.remove('text-grey8A')
+      characterCounter.classList.remove('text-warning')
+    } else if (characterCount === 0) {
+      postButton.classList.add('disabled')
+    } else if (characterCount > 280) {
+      postButton.classList.remove('disabled')
+      characterCounter.classList.remove('fc-red')
+      characterCounter.classList.remove('text-grey8A')
+      characterCounter.classList.add('text-warning')
+    } else {
+      postButton.classList.remove('disabled')
+      characterCounter.classList.remove('fc-red')
+      characterCounter.classList.add('text-grey8A')
+      characterCounter.classList.remove('text-warning')
+    }
+  })
+}
+
 // Callback function to execute when body mutations are observed
 const appRootObserverCallback = function () {
   if (currentUrl !== window.location.href) {
@@ -974,18 +1176,18 @@ function enrichProfileFromApi () {
       getFollowing(pageUsername)
         .then(followingRes => {
           const userDataDiv = getProfileUserDataDiv()
-          if (!userDataDiv) return
+          if (!userDataDiv) return Promise.reject()
 
           addFollowsYouBadgeProfile(userDataDiv, loggedInProfile, followingRes.PublicKeyToProfileEntry)
           addFollowingCountProfile(userDataDiv, followingRes.NumFollowers)
 
-          if (getUsernameFromUrl() !== pageUsername) return
+          if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
           const loggedInPubKey = loggedInProfile.PublicKeyBase58Check
           return getProfile(pageUsername)
             .then(pageProfile => {
               const userDataDiv = getProfileUserDataDiv()
-              if (!userDataDiv) return
+              if (!userDataDiv) return Promise.reject()
 
               if (getUsernameFromUrl() !== pageUsername) return
 
@@ -996,10 +1198,12 @@ function enrichProfileFromApi () {
               return Promise.resolve(pageProfile)
             })
             .then(pageProfile => {
+              if (!pageProfile) return Promise.reject()
+
               return getHodlers(loggedInPubKey, getLoggedInUsername())
                 .then(hodlersList => {
                   const userDataDiv = getProfileUserDataDiv()
-                  if (!userDataDiv) return
+                  if (!userDataDiv) return Promise.reject()
 
                   addHodlerBadgeProfile(userDataDiv, hodlersList, pageProfile.PublicKeyBase58Check)
                 })
@@ -1037,6 +1241,8 @@ const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
   addPostUsernameAutocomplete()
 
+  addPostTextAreaListener()
+
   const profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
     observeProfileInnerContent()
@@ -1056,9 +1262,72 @@ const bodyObserverCallback = function () {
   }
 }
 
+const onTransactionSigned = (payload) => {
+  if (!payload) return
+
+  const transactionHex = payload.signedTransactionHex
+  if (!transactionHex) return
+
+  submitTransaction(transactionHex).then(res => {
+    const response = res.PostEntryResponse
+    if (response && response.PostHashHex) {
+      window.location.href = `posts/${response.PostHashHex}`
+    } else {
+      window.location.href = `u/${getLoggedInUsername()}`
+    }
+  }).catch(() => {})
+}
+
+const handleLogin = (payload) => {
+  if (identityWindow) {
+    identityWindow.close()
+    identityWindow = null
+  }
+
+  chrome.storage.local.set({ users: payload.users })
+
+  if (payload.signedTransactionHex) {
+    onTransactionSigned(payload)
+  }
+}
+
+function handleUnknownMessage (payload) {
+  if (!payload) return
+
+  if (payload.approvalRequired && pendingTransactionHex) {
+    identityWindow = window.open(`https://identity.bitclout.com/approve?tx=${pendingTransactionHex}`, null, 'toolbar=no, width=800, height=1000, top=0, left=0')
+    pendingTransactionHex = null
+  } else if (payload.signedTransactionHex) {
+    onTransactionSigned(payload)
+  }
+}
+
+const handleMessage = (message) => {
+  const { data: { id: id, method: method, payload: payload } } = message
+
+  if (method === 'initialize') {
+    identityFrame = document.getElementById("identity")
+  } else if (method === 'login') {
+    handleLogin(payload)
+  } else if (id === pendingSignTransactionId) {
+    pendingSignTransactionId = null
+    handleUnknownMessage(payload)
+  }
+}
+
 const init = function () {
+  window.addEventListener('message', handleMessage)
+
   chrome.storage.sync.get(['darkMode'], value => {
     if (value.darkMode === true) loadCSS('dark')
+  })
+
+  chrome.storage.local.get(['longPost'], items => {
+    if (items.longPost === undefined) {
+      chrome.storage.local.set({ longPost: true })
+    } else {
+      longPostEnabled = items.longPost
+    }
   })
 
   // app-root is dynamically loaded, so we observe changes to the child list
@@ -1075,7 +1344,7 @@ const init = function () {
     const globalObserver = new MutationObserver(globalContainerObserverCallback)
     globalObserver.observe(globalContainer, globalObserverConfig)
   }
-  
+
   const body = document.getElementsByTagName('body')[0]
   if (body) {
     const bodyObserverConfig = { childList: true, subtree: false }
