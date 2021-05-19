@@ -3,20 +3,18 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-const nanosInBitClout = 1000000000
 const apiBaseUrl = 'https://bitclout.com/api/v0'
-
-let longPostEnabled = true
+const nanosInBitClout = 1000000000
 const maxPostLength = 1000
+const postButtonClass = 'plus-btn-submit-post'
 
-let username, timer, currentUrl
-
+let timer, currentUrl
 let identityFrame, identityWindow, identityUsers
 let pendingSignTransactionId, pendingTransactionHex
+let searchAbortController
 
+let longPostEnabled = true
 let observingHolders = false
-
-const followingCountId = 'plus-profile-following-count'
 
 const dollarFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -36,14 +34,11 @@ const getSpotPrice = function () {
 }
 
 const getLoggedInUsername = function () {
-  if (username && username !== '') return username
-
   const elementList = document.getElementsByClassName('change-account-selector__ellipsis-restriction')
 
   try {
     const changeAccountSelector = elementList.item(0)
-    username = changeAccountSelector.innerHTML.trim()
-    return username
+    return changeAccountSelector.innerHTML.trim()
   } catch (e) {}
 
   return ''
@@ -83,61 +78,93 @@ function unloadCSS(file) {
   cssNode && cssNode.parentNode.removeChild(cssNode)
 }
 
-const reqHeaders = {
-  'accept': 'application/json, text/plain, */*',
-  'content-type': 'application/json',
-}
-
-const getProfile = function (username) {
-  if (!username) return Promise.reject('Missing required parameter username')
-  return fetch(`${apiBaseUrl}/get-single-profile`, {
-    'headers': reqHeaders,
+const buildRequest = (credentials) => {
+  return {
+    'headers': {
+      'accept': 'application/json, text/plain, */*',
+      'content-type': 'application/json',
+    },
     'referrerPolicy': 'no-referrer',
-    'body': JSON.stringify({
-      Username: username
-    }),
     'method': 'POST',
     'mode': 'cors',
-    'credentials': 'include'
-  }).then(res => res.json())
-    .then(res => res.Profile)
+    'credentials': credentials
+  }
+}
+
+const getProfileByUsername = function (username) {
+  if (!username) return Promise.reject('Missing required parameter username')
+
+  const request = buildRequest('include')
+  request.body = JSON.stringify({
+    Username: username
+  })
+
+  return fetch(`${apiBaseUrl}/get-single-profile`, request)
+    .then(res => res.json())
+    .then(res => res['Profile'])
+}
+
+const getProfileByPublicKey = function (publicKey) {
+  if (!publicKey) return Promise.reject('Missing required parameter publicKey')
+
+  const request = buildRequest('include')
+  request.body = JSON.stringify({
+    PublicKeyBase58Check: publicKey
+  })
+
+  return fetch(`${apiBaseUrl}/get-single-profile`, request)
+    .then(res => res.json())
+    .then(res => res['Profile'])
 }
 
 const getFollowing = function (username) {
   if (!username) return Promise.reject('Missing required parameter username')
-  return fetch(`${apiBaseUrl}/get-follows-stateless`, {
-    'headers': reqHeaders,
-    'referrerPolicy': 'no-referrer',
-    'body': JSON.stringify({
-      Username: username,
-      getEntriesFollowingPublicKey: false,
-      NumToFetch: 10000
-    }),
-    'method': 'POST',
-    'mode': 'cors',
-    'credentials': 'include'
-  }).then(res => res.json())
+
+  const request = buildRequest('include')
+  request.body = JSON.stringify({
+    Username: username,
+    getEntriesFollowingPublicKey: false,
+    NumToFetch: 10000
+  })
+
+  return fetch(`${apiBaseUrl}/get-follows-stateless`, request)
+    .then(res => res.json())
 }
 
-const getHodlers = function (username) {
+const getHodlersByUsername = function (username) {
   if (!username) return Promise.reject('Missing required parameter username')
 
   const readerPubKey = getLoggedInPublicKey()
   if (!readerPubKey) return Promise.reject('No logged in user found')
 
-  return fetch(`${apiBaseUrl}/get-hodlers-for-public-key`, {
-    'headers': reqHeaders,
-    'referrerPolicy': 'no-referrer',
-    'body': JSON.stringify({
-      ReaderPublicKeyBase58Check: readerPubKey,
-      username: username,
-      NumToFetch: 10000
-    }),
-    'method': 'POST',
-    'mode': 'cors',
-    'credentials': 'omit'
-  }).then(res => res.json())
-    .then(res => res.Hodlers)
+  const request = buildRequest('omit')
+  request.body = JSON.stringify({
+    ReaderPublicKeyBase58Check: readerPubKey,
+    username: username,
+    NumToFetch: 10000
+  })
+
+  return fetch(`${apiBaseUrl}/get-hodlers-for-public-key`, request)
+    .then(res => res.json())
+    .then(res => res['Hodlers'])
+}
+
+const getHodlersByPublicKey = function (pubKey) {
+  if (!pubKey) return Promise.reject('Missing required parameter pubKey')
+
+  const readerPubKey = getLoggedInPublicKey()
+  if (!readerPubKey) return Promise.reject('No logged in user found')
+
+  const request = buildRequest('omit')
+  request.body = JSON.stringify({
+    ReaderPublicKeyBase58Check: readerPubKey,
+    PublicKeyBase58Check: pubKey,
+    NumToFetch: 10000
+  })
+
+  return fetch(`${apiBaseUrl}/get-hodlers-for-public-key`, request)
+    .then(res => res.json())
+    .then(res => res['Hodlers'])
 }
 
 const submitPost = (pubKey, input, image, video) => {
@@ -157,50 +184,44 @@ const submitPost = (pubKey, input, image, video) => {
 
   if (video) body.PostExtraData = { EmbedVideoURL: video }
 
-  return fetch(`${apiBaseUrl}/submit-post`, {
-    'headers': reqHeaders,
-    'referrerPolicy': 'no-referrer',
-    'body': JSON.stringify(body),
-    'method': 'POST',
-    'mode': 'cors',
-    'credentials': 'omit'
-  }).then(res => res.json())
-    .then(res => res.TransactionHex)
+  const request = buildRequest('omit')
+  request.body = JSON.stringify(body)
+
+  return fetch(`${apiBaseUrl}/submit-post`, request)
+    .then(res => res.json())
+    .then(res => res['TransactionHex'])
 }
 
-const submitTransaction = (transactionHex) =>
-  fetch(`${apiBaseUrl}/submit-transaction`, {
-    'headers': reqHeaders,
-    'referrerPolicy': 'no-referrer',
-    'body': JSON.stringify({
-      TransactionHex: transactionHex
-    }),
-    'method': 'POST',
-    'mode': 'cors',
-    'credentials': 'omit'
-  }).then(res => res.json())
+const submitTransaction = (transactionHex) => {
+  if (!transactionHex) return Promise.reject('Missing required parameter tranactionHex')
 
-let controller
+  const request = buildRequest('omit')
+  request.body = JSON.stringify({
+    TransactionHex: transactionHex
+  })
+
+  return fetch(`${apiBaseUrl}/submit-transaction`, request)
+    .then(res => res.json())
+}
 
 const searchUsernames = function (query, cb) {
-  if (controller) {
-    controller.abort()
+  if (searchAbortController) {
+    searchAbortController.abort()
   }
 
-  controller = new AbortController()
-  const { signal } = controller
+  const request = buildRequest('omit')
+  request.body = JSON.stringify({
+    UsernamePrefix: query,
+    NumToFetch: 4
+  })
 
-  return fetch(`${apiBaseUrl}/get-profiles`, {
-    'headers': reqHeaders,
-    'referrerPolicy': 'no-referrer',
-    'body': JSON.stringify({
-      UsernamePrefix: query,
-      NumToFetch: 4
-    }),
-    'method': 'POST',
-    'signal': signal
-  }).then(res => res.json())
-    .then(res => { cb(res.ProfilesFound) })
+  searchAbortController = new AbortController()
+  const { signal } = searchAbortController
+  request.signal = signal
+
+  return fetch(`${apiBaseUrl}/get-profiles`, request)
+    .then(res => res.json())
+    .then(res => { cb(res['ProfilesFound']) })
     .catch(() => {})
 }
 
@@ -211,7 +232,8 @@ const addNativeCoinPrice = function (userDataDiv, profile) {
   try {
     const userDataFooter = userDataDiv.lastElementChild
 
-    const nativePrice = (profile.CoinPriceBitCloutNanos / nanosInBitClout).toFixed(2)
+    const coinPriceNanos = profile['CoinPriceBitCloutNanos']
+    const nativePrice = (coinPriceNanos / nanosInBitClout).toFixed(2)
 
     const tooltipAttr = document.createAttribute('data-bs-toggle')
     tooltipAttr.value = 'tooltip'
@@ -249,7 +271,8 @@ const addFounderReward = function (userDataDiv, profile) {
   try {
     const userDataFooter = userDataDiv.lastElementChild
 
-    const founderReward = (profile.CoinEntry.CreatorBasisPoints / 100).toFixed(0)
+    const basisPoints = profile['CoinEntry']['CreatorBasisPoints']
+    const founderReward = (basisPoints / 100).toFixed(0)
     const feeSpan = document.createElement('span')
     feeSpan.className = 'font-weight-bold'
     feeSpan.innerText = `${founderReward}`
@@ -304,7 +327,7 @@ const addHoldersCount = function (pageProfile) {
   const holderDiv = creatorCoinTabHeader.firstElementChild
   if (!holderDiv || !holderDiv.innerHTML.includes('Holders of')) return
 
-  const usersThatHodl = pageProfile.CoinEntry.NumberOfHolders
+  const usersThatHodl = pageProfile['CoinEntry']['NumberOfHolders']
   const holderCountId = 'plus-profile-holder-count'
 
   let span
@@ -474,7 +497,6 @@ const addFollowingCountProfile = function (userDataDiv, followingCount) {
   labelSpan.innerHTML = 'Following&nbsp;&nbsp;'
 
   const a = document.createElement('a')
-  a.id = followingCountId
   a.className = 'link--unstyled'
   a.href = document.location.pathname + '/following'
   a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
@@ -496,7 +518,7 @@ const addHodlerBadgeProfile = function (userDataDiv, hodlersList, pubKey) {
   const usernameDiv = userDataDiv.firstElementChild
   if (!usernameDiv) return
 
-  let hodler = hodlersList.find(user => user.HODLerPublicKeyBase58Check === pubKey)
+  let hodler = hodlersList.find(user => user['HODLerPublicKeyBase58Check'] === pubKey)
   if (hodler) {
     const isHodlerSpan = document.createElement('span')
     isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px text-grey5'
@@ -771,7 +793,7 @@ const enrichBalanceBox = function (profile) {
   if (!profile) return
 
   try {
-    const nativePrice = (profile.CoinPriceBitCloutNanos / 1000000000).toFixed(2)
+    const nativePrice = (profile['CoinPriceBitCloutNanos'] / nanosInBitClout).toFixed(2)
     const spotPrice = getSpotPrice()
     const coinPriceUsd = nativePrice * spotPrice
 
@@ -831,12 +853,11 @@ const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
   addDarkModeSwitch()
-  replacePostBtnClickEvent()
 }
 
 function buildTributeUsernameMenuTemplate (item) {
   const spotPrice = getSpotPrice()
-  const bitcloutPrice = item.original.CoinPriceBitCloutNanos / nanosInBitClout
+  const bitcloutPrice = item.original['CoinPriceBitCloutNanos'] / nanosInBitClout
 
   const priceDiv = document.createElement('div')
   priceDiv.className = 'text-muted fs-12px'
@@ -849,9 +870,9 @@ function buildTributeUsernameMenuTemplate (item) {
   reservedIcon.className = 'far fa-clock fa-md ml-1 text-muted'
 
   let icon
-  if (item.original.IsVerified) {
+  if (item.original['IsVerified']) {
     icon = verifiedIcon
-  } else if (item.original.IsReserved) {
+  } else if (item.original['IsReserved']) {
     icon = reservedIcon
   }
 
@@ -866,7 +887,7 @@ function buildTributeUsernameMenuTemplate (item) {
 
   const img = document.createElement('img')
   img.className = 'tribute-avatar'
-  img.src = item.original.ProfilePic
+  img.src = item.original['ProfilePic']
 
   const row = document.createElement('div')
   row.className = 'row no-gutters'
@@ -982,14 +1003,17 @@ const onPostButtonClick = (postButton) => {
 
     const id = _.UUID.v4()
     sendSignTransactionMsg(identity, transactionHex, id)
-  }).catch(reason => {
+  }).catch(() => {
     postButton.classList.remove('disabled')
     postButton.innerHTML = 'Post'
   })
 }
 
 const getPostButton = (container) => {
-  const primaryButtons = container.getElementsByClassName('btn-primary')
+  const plusButton = container.querySelector(`.${postButtonClass}`)
+  if (plusButton) return plusButton
+
+  const primaryButtons = container.querySelectorAll('.btn-primary')
   let postButton
   for (let primaryButton of primaryButtons) {
     if (primaryButton.innerHTML.includes('Post')) {
@@ -1000,7 +1024,7 @@ const getPostButton = (container) => {
   return postButton
 }
 
-const replacePostBtnClickEvent = () => {
+const replacePostBtn = () => {
   if (!longPostEnabled) return
 
   const container = document.querySelector('feed-create-post')
@@ -1009,7 +1033,15 @@ const replacePostBtnClickEvent = () => {
   const postButton = getPostButton(container)
   if (!postButton) return
 
-  postButton.onclick = () => onPostButtonClick(postButton)
+  const newButton = postButton.cloneNode(true)
+  newButton.classList.add(postButtonClass)
+
+  postButton.style.display = 'none'
+
+  const parent = postButton.parentElement
+  parent.appendChild(newButton)
+
+  newButton.onclick = () => onPostButtonClick(newButton)
 }
 
 const addPostTextAreaListener = () => {
@@ -1022,9 +1054,9 @@ const addPostTextAreaListener = () => {
   if (!postTextArea) return
 
   const characterCounter = container.getElementsByClassName('feed-create-post__character-counter').item(0)
-  const postButton = getPostButton(container)
 
-  postTextArea.addEventListener('input', (event) => {
+  postTextArea.addEventListener('input', () => {
+    const postButton = getPostButton(container)
     const characterCount = postTextArea.value.length
     characterCounter.innerText = `${characterCount} / ${maxPostLength}`
 
@@ -1083,12 +1115,10 @@ const appRootObserverCallback = function () {
 }
 
 const updateUserCreatorCoinPrice = function () {
-  const loggedInUsername = getLoggedInUsername()
-  getProfile(loggedInUsername)
-    .then(profile => {
-      enrichBalanceBox(profile)
-    })
-    .catch(() => {})
+  const key = getLoggedInPublicKey()
+  getProfileByPublicKey(key).then(profile => {
+    enrichBalanceBox(profile)
+  }).catch(() => {})
 }
 
 const getProfileUserDataDiv = function () {
@@ -1108,41 +1138,45 @@ function enrichProfileFromApi () {
   const pageUsername = getUsernameFromUrl()
   if (!pageUsername) return
 
+  const loggedInPubKey = getLoggedInPublicKey()
+
   getFollowing(pageUsername).then(followingRes => {
     const userDataDiv = getProfileUserDataDiv()
     if (!userDataDiv) return Promise.reject()
 
-    addFollowsYouBadgeProfile(userDataDiv, followingRes.PublicKeyToProfileEntry)
-    addFollowingCountProfile(userDataDiv, followingRes.NumFollowers)
+    addFollowsYouBadgeProfile(userDataDiv, followingRes['PublicKeyToProfileEntry'])
+    addFollowingCountProfile(userDataDiv, followingRes['NumFollowers'])
 
     if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
-    return Promise.resolve()
-  }).then(() => getProfile(pageUsername)).then(pageProfile => {
+
+  }).then(() => getProfileByUsername(pageUsername)).then(pageProfile => {
     const userDataDiv = getProfileUserDataDiv()
     if (!userDataDiv) return Promise.reject()
 
-    if (getUsernameFromUrl() !== pageUsername) return
+    if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
     addNativeCoinPrice(userDataDiv, pageProfile)
     addFounderReward(userDataDiv, pageProfile)
     addHoldersCount(pageProfile)
 
-    return Promise.resolve(pageProfile)
-  }).then(pageProfile => {
-    if (!pageProfile) return Promise.reject()
+    const pubKey = pageProfile['PublicKeyBase58Check']
+    return Promise.resolve(pubKey)
 
-    return getHodlers(getLoggedInUsername()).then(hodlersList => {
+  }).then(pagePubKey => {
+    if (!pagePubKey) return Promise.reject()
+
+    return getHodlersByPublicKey(loggedInPubKey).then(hodlersList => {
+      if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
+
       const userDataDiv = getProfileUserDataDiv()
       if (!userDataDiv) return Promise.reject()
 
-      addHodlerBadgeProfile(userDataDiv, hodlersList,
-        pageProfile.PublicKeyBase58Check)
+      addHodlerBadgeProfile(userDataDiv, hodlersList, pagePubKey)
     })
-  }).then(() => getHodlers(pageUsername)).then(hodlersList => {
-    const loggedInPubKey = getLoggedInPublicKey()
-    const loggedInUserIsHodler = hodlersList.filter(
-      hodler => hodler.HODLerPublicKeyBase58Check ===
-        loggedInPubKey).length > 0
+  }).then(() => getHodlersByUsername(pageUsername)).then(hodlersList => {
+    const loggedInUserIsHodler = hodlersList.find(hodler => {
+      return hodler['HODLerPublicKeyBase58Check'] === loggedInPubKey
+    })
     if (loggedInUserIsHodler) addSellButton()
   }).catch(() => {})
 }
@@ -1154,9 +1188,7 @@ function observeProfileInnerContent () {
     const observer = new MutationObserver(mutations => {
       mutations.forEach(mutation => {
         Array.from(mutation.addedNodes, node => {
-          if (node.nodeName !== 'SIMPLE-CENTER-LOADER') {
-            enrichProfileFromApi()
-          }
+          if (node.nodeName !== 'SIMPLE-CENTER-LOADER') enrichProfileFromApi()
         })
       })
     })
@@ -1167,7 +1199,6 @@ function observeProfileInnerContent () {
 const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
   addPostUsernameAutocomplete()
-
   addPostTextAreaListener()
 
   const profilePage = document.querySelector('app-creator-profile-page')
@@ -1187,18 +1218,20 @@ const bodyObserverCallback = function () {
   if (modalContainer) {
     addPostUsernameAutocomplete()
   }
+
+  replacePostBtn()
 }
 
 const onTransactionSigned = (payload) => {
   if (!payload) return
 
-  const transactionHex = payload.signedTransactionHex
+  const transactionHex = payload['signedTransactionHex']
   if (!transactionHex) return
 
   submitTransaction(transactionHex).then(res => {
-    const response = res.PostEntryResponse
-    if (response && response.PostHashHex) {
-      window.location.href = `posts/${response.PostHashHex}`
+    const response = res['PostEntryResponse']
+    if (response && response['PostHashHex']) {
+      window.location.href = `posts/${response['PostHashHex']}`
     } else {
       window.location.href = `u/${getLoggedInUsername()}`
     }
@@ -1213,7 +1246,7 @@ const handleLogin = (payload) => {
 
   chrome.storage.local.set({ users: payload.users })
 
-  if (payload.signedTransactionHex) {
+  if (payload['signedTransactionHex']) {
     onTransactionSigned(payload)
   }
 }
@@ -1221,10 +1254,12 @@ const handleLogin = (payload) => {
 function handleUnknownMessage (payload) {
   if (!payload) return
 
-  if (payload.approvalRequired && pendingTransactionHex) {
-    identityWindow = window.open(`https://identity.bitclout.com/approve?tx=${pendingTransactionHex}`, null, 'toolbar=no, width=800, height=1000, top=0, left=0')
+  if (payload['approvalRequired'] && pendingTransactionHex) {
+    identityWindow = window.open(
+      `https://identity.bitclout.com/approve?tx=${pendingTransactionHex}`, null,
+      'toolbar=no, width=800, height=1000, top=0, left=0')
     pendingTransactionHex = null
-  } else if (payload.signedTransactionHex) {
+  } else if (payload['signedTransactionHex']) {
     onTransactionSigned(payload)
   }
 }
