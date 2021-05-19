@@ -9,7 +9,7 @@ const apiBaseUrl = 'https://bitclout.com/api/v0'
 let longPostEnabled = true
 const maxPostLength = 1000
 
-let username, timer, loggedInProfile, currentUrl
+let username, timer, currentUrl
 
 let identityFrame, identityWindow, identityUsers
 let pendingSignTransactionId, pendingTransactionHex
@@ -54,42 +54,20 @@ const getUsernameFromUrl = function () {
   return segments.pop() || segments.pop()
 }
 
-const getLoggedInProfile = function () {
-  let promise
-  if (loggedInProfile) {
-    promise = Promise.resolve(loggedInProfile)
-  } else {
-    const loggedInUserName = getLoggedInUsername()
-    promise = getProfile(loggedInUserName)
-      .then(profile => {
-        loggedInProfile = profile
-        return Promise.resolve(profile)
-      })
-  }
-  return promise
+const getLoggedInPublicKey = function () {
+  const key = window.localStorage.getItem('lastLoggedInUser')
+  if (!key) return undefined
+
+  return JSON.parse(key)
 }
 
-const getCurrentIdentity = () => getLoggedInProfile()
-  .then(profile => profile.PublicKeyBase58Check)
-  .then(key =>
-    new Promise((resolve, reject) => {
-      chrome.storage.local.get('users', result => {
-        const users = result.users
-        if (!users) {
-          resolve(null)
-          return
-        }
-
-        const loggedInUserIdentity = users[key]
-        if (!loggedInUserIdentity) {
-          resolve(null)
-          return
-        }
-
-        resolve(loggedInUserIdentity)
-      })
-    })
-  )
+const getCurrentIdentity = () => {
+  const key = getLoggedInPublicKey()
+  const storedIdentityUsers = window.localStorage.getItem('identityUsers')
+  if (!key || !storedIdentityUsers) return undefined
+  const identityUsers = JSON.parse(storedIdentityUsers)
+  return identityUsers[key]
+}
 
 function loadCSS(filename) {
   const link = document.createElement("link")
@@ -111,7 +89,7 @@ const reqHeaders = {
 }
 
 const getProfile = function (username) {
-  if (!username) return Promise.reject('Required parameter username is undefined')
+  if (!username) return Promise.reject('Missing required parameter username')
   return fetch(`${apiBaseUrl}/get-single-profile`, {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
@@ -126,6 +104,7 @@ const getProfile = function (username) {
 }
 
 const getFollowing = function (username) {
+  if (!username) return Promise.reject('Missing required parameter username')
   return fetch(`${apiBaseUrl}/get-follows-stateless`, {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
@@ -140,7 +119,12 @@ const getFollowing = function (username) {
   }).then(res => res.json())
 }
 
-const getHodlers = function (readerPubKey, username) {
+const getHodlers = function (username) {
+  if (!username) return Promise.reject('Missing required parameter username')
+
+  const readerPubKey = getLoggedInPublicKey()
+  if (!readerPubKey) return Promise.reject('No logged in user found')
+
   return fetch(`${apiBaseUrl}/get-hodlers-for-public-key`, {
     'headers': reqHeaders,
     'referrerPolicy': 'no-referrer',
@@ -456,13 +440,13 @@ const addHolderEnrichments = function () {
   observingHolders = true
 }
 
-const addFollowsYouBadgeProfile = function (userDataDiv, loggedInProfile, followingList) {
-  if (!userDataDiv || !loggedInProfile | !followingList || followingList.length === 0) return
+const addFollowsYouBadgeProfile = function (userDataDiv, followingList) {
+  const loggedInKey = getLoggedInPublicKey()
+  if (!loggedInKey || !userDataDiv || !followingList || followingList.length === 0) return
 
   const usernameDiv = userDataDiv.firstElementChild
   if (!usernameDiv) return
 
-  const loggedInKey = loggedInProfile.PublicKeyBase58Check
   let followsYou = followingList[loggedInKey]
   if (followsYou) {
     const followsYouSpan = document.createElement('span')
@@ -768,54 +752,6 @@ const enrichWallet = function () {
   } catch (e) {}
 }
 
-const enrichBuy = function () {
-  const percentageId = 'plus-trade-founder-fee-percentage'
-  if (document.getElementById(percentageId)) return
-
-  const tradeCreatorTable = document.querySelector('trade-creator-table')
-  if (!tradeCreatorTable) return
-
-  getLoggedInProfile()
-    .then(profile => profile.PublicKeyBase58Check)
-    .then(key => {
-      const exchangingDiv = tradeCreatorTable.children.item(0)
-      const exchangingAmountSpan = exchangingDiv.children.item(1)
-      const exchangeText = exchangingAmountSpan.innerText.substring(0, exchangingAmountSpan.innerText.indexOf('BitClout'))
-      const exchangingAmount = parseFloat(exchangeText.trim())
-      if (exchangingAmount === 0 || isNaN(exchangingAmount)) return Promise.reject()
-
-      return fetch(`${apiBaseUrl}/buy-or-sell-creator-coin-preview-WVAzTWpGOFFnMlBvWXZhTFA4NjNSZGNW`, {
-        'headers': reqHeaders,
-        'referrerPolicy': 'no-referrer',
-        'body': JSON.stringify({
-          UpdaterPublicKeyBase58Check: key,
-          CreatorPublicKeyBase58Check: key,
-          OperationType: 'buy',
-          BitCloutToSellNanos: exchangingAmount * nanosInBitClout,
-          MinFeeRateNanosPerKB: 1000
-        }),
-        'method': 'POST',
-        'mode': 'cors',
-        'credentials': 'include'
-      })
-    })
-    .then(res => res.json())
-    .then(buyPreview => {
-      if (document.getElementById(percentageId)) return
-
-      const founderFee = buyPreview.FounderRewardGeneratedNanos / nanosInBitClout
-
-      let feePercentage = document.createElement('span')
-      feePercentage.id = percentageId
-      feePercentage.innerHTML = ` (${founderFee.toFixed(5)})`
-
-      const rewardDiv = tradeCreatorTable.lastElementChild
-      const rewardSpan = rewardDiv.getElementsByTagName('span').item(0)
-      rewardSpan.appendChild(feePercentage)
-    })
-    .catch(() => {})
-}
-
 const enrichTransfer = function () {
   const transferElement = document.querySelector('transfer-bitclout')
   const recipientDiv = transferElement.children.item(2)
@@ -960,8 +896,8 @@ const addPostUsernameAutocomplete = function () {
   }
 }
 
-const addTransferRecipientUsernameAutocomplete = function (placholder) {
-  const transferInput = document.querySelectorAll(`input[placeholder="${placholder}"]`).item(0)
+const addTransferRecipientUsernameAutocomplete = function (placeholder) {
+  const transferInput = document.querySelectorAll(`input[placeholder="${placeholder}"]`).item(0)
   if (!transferInput || transferInput.dataset && transferInput.dataset.tribute) return
 
   const tribute = new Tribute({
@@ -990,6 +926,9 @@ const sendSignTransactionMsg = (identity, transactionHex, id) => {
     payload.accessLevelHmac = identity.accessLevelHmac
     payload.encryptedSeedHex = identity.encryptedSeedHex
   }
+
+  pendingSignTransactionId = id
+  pendingTransactionHex = transactionHex
 
   identityFrame.contentWindow.postMessage({
     id: id,
@@ -1030,24 +969,23 @@ const onPostButtonClick = (postButton) => {
   const postVideo = container.querySelector('input[type="url"]')
   const videoUrl = postVideo ? postVideo.value : undefined
 
-  getLoggedInProfile()
-    .then(profile => profile.PublicKeyBase58Check)
-    .then(pubKey => submitPost(pubKey, postBody, image, videoUrl))
-    .then(transactionHex => {
-      if (!transactionHex) return Promise.reject('Error creating submit-post transaction')
+  const pubKey = getLoggedInPublicKey()
+  submitPost(pubKey, postBody, image, videoUrl).then(transactionHex => {
+    if (!transactionHex) {
+      return Promise.reject('Error creating submit-post transaction')
+    }
 
-      pendingTransactionHex = transactionHex
+    const identity = getCurrentIdentity()
+    if (!identity) {
+      return Promise.reject('No Identity found')
+    }
 
-      return getCurrentIdentity()
-        .then(identity => {
-          pendingSignTransactionId = _.UUID.v4()
-          sendSignTransactionMsg(identity, transactionHex, pendingSignTransactionId)
-        })
-    })
-    .catch(reason => {
-      postButton.classList.remove('disabled')
-      postButton.innerHTML = 'Post'
-    })
+    const id = _.UUID.v4()
+    sendSignTransactionMsg(identity, transactionHex, id)
+  }).catch(reason => {
+    postButton.classList.remove('disabled')
+    postButton.innerHTML = 'Post'
+  })
 }
 
 const getPostButton = (container) => {
@@ -1134,7 +1072,6 @@ const appRootObserverCallback = function () {
 
   const tradePage = document.querySelector('trade-creator-page')
   if (tradePage) {
-    enrichBuy()
     addTransferRecipientUsernameAutocomplete("Enter a bitclout public key or recipient")
     return
   }
@@ -1146,9 +1083,9 @@ const appRootObserverCallback = function () {
 }
 
 const updateUserCreatorCoinPrice = function () {
-  getProfile(getLoggedInUsername())
+  const loggedInUsername = getLoggedInUsername()
+  getProfile(loggedInUsername)
     .then(profile => {
-      loggedInProfile = profile
       enrichBalanceBox(profile)
     })
     .catch(() => {})
@@ -1171,53 +1108,43 @@ function enrichProfileFromApi () {
   const pageUsername = getUsernameFromUrl()
   if (!pageUsername) return
 
-  return getLoggedInProfile()
-    .then(loggedInProfile => {
-      getFollowing(pageUsername)
-        .then(followingRes => {
-          const userDataDiv = getProfileUserDataDiv()
-          if (!userDataDiv) return Promise.reject()
+  getFollowing(pageUsername).then(followingRes => {
+    const userDataDiv = getProfileUserDataDiv()
+    if (!userDataDiv) return Promise.reject()
 
-          addFollowsYouBadgeProfile(userDataDiv, loggedInProfile, followingRes.PublicKeyToProfileEntry)
-          addFollowingCountProfile(userDataDiv, followingRes.NumFollowers)
+    addFollowsYouBadgeProfile(userDataDiv, followingRes.PublicKeyToProfileEntry)
+    addFollowingCountProfile(userDataDiv, followingRes.NumFollowers)
 
-          if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
+    if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
+    return Promise.resolve()
+  }).then(() => getProfile(pageUsername)).then(pageProfile => {
+    const userDataDiv = getProfileUserDataDiv()
+    if (!userDataDiv) return Promise.reject()
 
-          const loggedInPubKey = loggedInProfile.PublicKeyBase58Check
-          return getProfile(pageUsername)
-            .then(pageProfile => {
-              const userDataDiv = getProfileUserDataDiv()
-              if (!userDataDiv) return Promise.reject()
+    if (getUsernameFromUrl() !== pageUsername) return
 
-              if (getUsernameFromUrl() !== pageUsername) return
+    addNativeCoinPrice(userDataDiv, pageProfile)
+    addFounderReward(userDataDiv, pageProfile)
+    addHoldersCount(pageProfile)
 
-              addNativeCoinPrice(userDataDiv, pageProfile)
-              addFounderReward(userDataDiv, pageProfile)
-              addHoldersCount(pageProfile)
+    return Promise.resolve(pageProfile)
+  }).then(pageProfile => {
+    if (!pageProfile) return Promise.reject()
 
-              return Promise.resolve(pageProfile)
-            })
-            .then(pageProfile => {
-              if (!pageProfile) return Promise.reject()
+    return getHodlers(getLoggedInUsername()).then(hodlersList => {
+      const userDataDiv = getProfileUserDataDiv()
+      if (!userDataDiv) return Promise.reject()
 
-              return getHodlers(loggedInPubKey, getLoggedInUsername())
-                .then(hodlersList => {
-                  const userDataDiv = getProfileUserDataDiv()
-                  if (!userDataDiv) return Promise.reject()
-
-                  addHodlerBadgeProfile(userDataDiv, hodlersList, pageProfile.PublicKeyBase58Check)
-                })
-            })
-            .then(() => {
-              return getHodlers(loggedInPubKey, pageUsername)
-                .then(hodlersList => {
-                  const loggedInUserIsHodler = hodlersList.filter(hodler => hodler.HODLerPublicKeyBase58Check === loggedInPubKey).length > 0
-                  if (loggedInUserIsHodler) addSellButton()
-                })
-            })
-        })
+      addHodlerBadgeProfile(userDataDiv, hodlersList,
+        pageProfile.PublicKeyBase58Check)
     })
-    .catch(() => {})
+  }).then(() => getHodlers(pageUsername)).then(hodlersList => {
+    const loggedInPubKey = getLoggedInPublicKey()
+    const loggedInUserIsHodler = hodlersList.filter(
+      hodler => hodler.HODLerPublicKeyBase58Check ===
+        loggedInPubKey).length > 0
+    if (loggedInUserIsHodler) addSellButton()
+  }).catch(() => {})
 }
 
 function observeProfileInnerContent () {
