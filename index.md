@@ -1,4 +1,4 @@
-BitClout+ is a Chrome / Brave browser extension that enhances bitclout.com pages
+BitClout+ is a free, open source Chrome / Brave browser extension that enhances bitclout.com pages
 
 ## Installation
 
