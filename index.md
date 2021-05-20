@@ -33,11 +33,6 @@ BitClout+ is a free, open source Chrome / Brave browser extension that enhances 
 
 ![Profile enhancments](assets/screenshots/bitclout-plus-profile@2x.jpg)
 
-#### Buy
-- Shows founder fee percentage in buy screen
-
-![Profile enhancments](assets/screenshots/bitclout-plus-buy@2x.jpg)
-
 #### Wallet
 - Shows total USD and BitClout value in wallet
 - Shows number of coins held
