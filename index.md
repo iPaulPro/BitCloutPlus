@@ -7,6 +7,7 @@ BitClout+ is a Chrome / Brave browser extension that enhances bitclout.com pages
 ![General enhancments](assets/screenshots/bitclout-plus-dark.gif)
 
 #### General
+- Changes 280 character limit to be 1000 on new posts
 - Username autocomplete
 - Dark mode (thanks [chapel](https://github.com/chapel/bitclout-darkmode))
 - [Omnibox](https://developer.chrome.com/docs/extensions/reference/omnibox/) support: Use keyword "bc" and enter username
@@ -48,7 +49,7 @@ Until BitClout+ is available on the Chrome Web Store, you may install manually.
 
 #### Step 1
 
-[Download](https://github.com/iPaulPro/BitCloutPlus/releases/download/v0.4.1/bitcloutplus-0.4.1.zip) the latest release, and unzip.
+[Download](https://github.com/iPaulPro/BitCloutPlus/releases/download/v0.5.0/bitcloutplus-0.5.0.zip) the latest release, and unzip.
 
 #### Step 2
 
