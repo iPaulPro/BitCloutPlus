@@ -1,22 +1,8 @@
 BitClout+ is a Chrome / Brave browser extension that enhances bitclout.com pages
 
-![Profile enhancments](assets/screenshots/bitclout-plus-profile@2x.jpg)
-
 ## Installation
 
-Until BitClout+ is available on the Chrome Web Store, you may install manually.
-
-#### Step 1
-
-[Download](https://github.com/iPaulPro/BitCloutPlus/releases/download/v0.5.0/bitcloutplus-0.5.0.zip) the latest release, and unzip.
-
-#### Step 2
-
-Enable [developer mode](https://developer.chrome.com/docs/extensions/mv2/faq/#faq-dev-01) in Chrome or Brave.
-
-#### Step 3
-
-Click "Load unpacked" and select the unzipped project directory.
+<a href="https://chrome.google.com/webstore/detail/bitclout-plus/djkhmpkljeampdpgbdjlgmjfeecfhifg"><img src="https://storage.googleapis.com/chrome-gcs-uploader.appspot.com/image/WlD8wC6g8khYWPJUsQceQkhXSlv1/HRs9MPufa1J1h5glNhut.png" width="248px"></a>
 
 ## Features
 
@@ -45,7 +31,7 @@ Click "Load unpacked" and select the unzipped project directory.
 - Highlights you in coin holder lists
 - Adds "Send BitClout" and "Send Message" menu items
 
-![Holder list enhancments](assets/screenshots/bitclout-plus-holders@2x.jpg)
+![Profile enhancments](assets/screenshots/bitclout-plus-profile@2x.jpg)
 
 #### Buy
 - Shows founder fee percentage in buy screen
