@@ -1081,6 +1081,18 @@ const addPostTextAreaListener = () => {
   })
 }
 
+function fixImageLightbox(modalContainer) {
+  const feedPostImage = modalContainer.querySelector('feed-post-image-modal')
+  if (feedPostImage) {
+    const content = modalContainer.querySelector('.modal-content')
+    content.style.width = 'auto'
+    content.style.margin = '0 auto'
+
+    const dialog = modalContainer.querySelector('.modal-dialog')
+    dialog.style.maxWidth = '1140px'
+  }
+}
+
 // Callback function to execute when body mutations are observed
 const appRootObserverCallback = function () {
   if (currentUrl !== window.location.href) {
@@ -1217,6 +1229,7 @@ const bodyObserverCallback = function () {
   const modalContainer = document.querySelector('modal-container')
   if (modalContainer) {
     addPostUsernameAutocomplete()
+    fixImageLightbox(modalContainer);
   }
 
   replacePostBtn()
@@ -1243,8 +1256,6 @@ const handleLogin = (payload) => {
     identityWindow.close()
     identityWindow = null
   }
-
-  chrome.storage.local.set({ users: payload.users })
 
   if (payload['signedTransactionHex']) {
     onTransactionSigned(payload)

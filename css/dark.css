@@ -243,6 +243,10 @@ button.btn-secondary,
     color: #aaaaaa !important;
 }
 
+.btn-warning {
+    color: #212529;
+}
+
 .tribute-container {
     filter: drop-shadow(0 0 1rem #000);
 }
