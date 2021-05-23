@@ -430,9 +430,8 @@ const addHolderEnrichments = function () {
   const circulation = getCoinsInCirculation(topCard)
 
   const firstHodlerNode = holdersList.childNodes.item(1)
-  const firstAvatarAndName = firstHodlerNode.firstChild.firstChild.firstChild
-  const firstHolderName = firstAvatarAndName.textContent.trim().replaceAll('.', '')
-  const holdsOwnCoin =  pageUsername.toLowerCase().startsWith(firstHolderName.toLowerCase())
+  const firstHolderName = firstHodlerNode.querySelector('.text-truncate')
+  const holdsOwnCoin = pageUsername.toLowerCase().startsWith(firstHolderName.innerText.toLowerCase())
 
   try {
     // Only the first few holders items are initially loaded...
