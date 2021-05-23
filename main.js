@@ -639,20 +639,20 @@ const addSendBitCloutMenuItem = function (menu) {
   } catch (e) {}
 }
 
-const addSendMessageMenuItem = function (menu) {
+const addInsightsMenuItem = function (menu) {
   if (!menu) return
 
-  let sendMessageId = 'plus-profile-menu-send-message'
+  let sendMessageId = 'plus-profile-menu-insights'
   if (document.getElementById(sendMessageId)) return
 
   try {
     const a = document.createElement('a')
     a.id = sendMessageId
     a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-    a.innerHTML = '<i class="fas fa-envelope"></i> Message '
+    a.innerHTML = '<i class="fas fa-brain"></i> Insights '
 
     const username = getUsernameFromUrl()
-    a.onclick = () => window.location.href = `inbox/${username}`
+    a.onclick = () => window.location.href = `https://prosperclout.com/u/${username}`
 
     menu.insertBefore(a, menu.lastElementChild)
   } catch (e) {}
@@ -714,7 +714,7 @@ const enrichProfile = function () {
   const profileMenu = getProfileMenu()
   addHistoryMenuItem(profileMenu)
   addWalletMenuItem(profileMenu)
-  addSendMessageMenuItem(profileMenu)
+  addInsightsMenuItem(profileMenu)
   addSendBitCloutMenuItem(profileMenu)
 
   addHolderEnrichments()
