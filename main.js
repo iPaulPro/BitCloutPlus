@@ -649,7 +649,7 @@ const addInsightsMenuItem = function (menu) {
     const a = document.createElement('a')
     a.id = sendMessageId
     a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-    a.innerHTML = '<i class="fas fa-brain"></i> Insights '
+    a.innerHTML = '<i class="fas fa-chart-bar"></i> Insights '
 
     const username = getUsernameFromUrl()
     a.onclick = () => window.location.href = `https://prosperclout.com/u/${username}`
@@ -958,6 +958,73 @@ const sendSignTransactionMsg = (identity, transactionHex, id) => {
   }, '*')
 }
 
+const restorePostDraft = () => {
+  chrome.storage.local.get(['postDraft'], items => {
+    const postDraft = items.postDraft
+    if (postDraft) {
+      const createPostTextArea = document.querySelector('.feed-create-post__textarea')
+      if (createPostTextArea) {
+        createPostTextArea.value = postDraft
+        chrome.storage.local.remove(['postDraft'])
+      }
+    }
+  })
+}
+
+const getPostButton = (container) => {
+  const plusButton = container.querySelector(`.${postButtonClass}`)
+  if (plusButton) return plusButton
+
+  const primaryButtons = container.querySelectorAll('.btn-primary')
+  let postButton
+  for (let primaryButton of primaryButtons) {
+    if (primaryButton.innerHTML.includes('Post')) {
+      postButton = primaryButton
+      break
+    }
+  }
+  return postButton
+}
+
+const disableLongPost = () => {
+  const container =  document.querySelector('feed-create-post')
+  if (!container) return
+
+  const postTextArea = container.querySelector('textarea')
+  if (!postTextArea) return
+
+  chrome.storage.local.set({
+    longPost: false,
+    postDraft: postTextArea.value
+  })
+  window.location.reload(true)
+}
+
+function addPostErrorDiv(e, container) {
+  const btn = document.createElement('button')
+  btn.className = 'btn btn-danger btn-sm mt-2'
+  btn.innerText = 'Disable long posting'
+  btn.onclick = () => disableLongPost()
+
+  const p = document.createElement('p')
+  p.className = 'text-muted fs-14px'
+  p.innerHTML = `
+      Trouble posting? Disabling long posting may help.
+      <br>
+      <br>
+      Please report this to <a href="/u/paulburke">@paulburke</a>:
+      <br>
+      <textarea class="w-100" rows="6">${(e.stack || e)}</textarea>
+    `
+
+  const div = document.createElement('div')
+  div.className = 'p-2'
+
+  div.appendChild(p)
+  div.appendChild(btn)
+  container.appendChild(div)
+}
+
 const onPostButtonClick = (postButton) => {
   if (!postButton) return
 
@@ -984,7 +1051,8 @@ const onPostButtonClick = (postButton) => {
   postButton.innerHTML = spinner.outerHTML
 
   const postImage = container.getElementsByClassName('feed-post__image').item(0)
-  const image = (postImage && postImage.src.includes('images.bitclout.com')) ? postImage.src : undefined
+  const hasImage = postImage && postImage.src && postImage.src.includes('images.bitclout.com')
+  const image = hasImage ? postImage.src : undefined
 
   const postVideo = container.querySelector('input[type="url"]')
   const videoUrl = postVideo ? postVideo.value : undefined
@@ -1002,25 +1070,12 @@ const onPostButtonClick = (postButton) => {
 
     const id = _.UUID.v4()
     sendSignTransactionMsg(identity, transactionHex, id)
-  }).catch(() => {
+  }).catch(e => {
+    addPostErrorDiv(e, container)
+
     postButton.classList.remove('disabled')
     postButton.innerHTML = 'Post'
   })
-}
-
-const getPostButton = (container) => {
-  const plusButton = container.querySelector(`.${postButtonClass}`)
-  if (plusButton) return plusButton
-
-  const primaryButtons = container.querySelectorAll('.btn-primary')
-  let postButton
-  for (let primaryButton of primaryButtons) {
-    if (primaryButton.innerHTML.includes('Post')) {
-      postButton = primaryButton
-      break
-    }
-  }
-  return postButton
 }
 
 const replacePostBtn = () => {
@@ -1052,27 +1107,29 @@ const addPostTextAreaListener = () => {
   const postTextArea = container.querySelector('textarea')
   if (!postTextArea) return
 
-  const characterCounter = container.getElementsByClassName('feed-create-post__character-counter').item(0)
+  const characterCounter = container.querySelector('.feed-create-post__character-counter')
 
   postTextArea.addEventListener('input', () => {
-    const postButton = getPostButton(container)
     const characterCount = postTextArea.value.length
-    characterCounter.innerText = `${characterCount} / ${maxPostLength}`
 
-    if (characterCount > maxPostLength) {
+    const postButton = getPostButton(container)
+    if (characterCount > 0) {
+      postButton.classList.remove('disabled')
+    } else {
       postButton.classList.add('disabled')
+    }
+
+    if (!characterCounter) return
+    characterCounter.innerText = `${characterCount} / ${maxPostLength}`
+    if (characterCount > maxPostLength) {
       characterCounter.classList.add('fc-red')
       characterCounter.classList.remove('text-grey8A')
       characterCounter.classList.remove('text-warning')
-    } else if (characterCount === 0) {
-      postButton.classList.add('disabled')
     } else if (characterCount > 280) {
-      postButton.classList.remove('disabled')
       characterCounter.classList.remove('fc-red')
       characterCounter.classList.remove('text-grey8A')
       characterCounter.classList.add('text-warning')
     } else {
-      postButton.classList.remove('disabled')
       characterCounter.classList.remove('fc-red')
       characterCounter.classList.add('text-grey8A')
       characterCounter.classList.remove('text-warning')
@@ -1211,6 +1268,7 @@ const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
   addPostUsernameAutocomplete()
   addPostTextAreaListener()
+  restorePostDraft()
 
   const profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
@@ -1228,7 +1286,7 @@ const bodyObserverCallback = function () {
   const modalContainer = document.querySelector('modal-container')
   if (modalContainer) {
     addPostUsernameAutocomplete()
-    fixImageLightbox(modalContainer);
+    fixImageLightbox(modalContainer)
   }
 
   replacePostBtn()
