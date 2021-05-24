@@ -519,9 +519,11 @@ const addHodlerBadgeProfile = function (userDataDiv, hodlersList, pubKey) {
 
   let hodler = hodlersList.find(user => user['HODLerPublicKeyBase58Check'] === pubKey)
   if (hodler) {
+    const holding = hodler['BalanceNanos'] / nanosInBitClout
+    const holdsOrPurchased = hodler['HasPurchased'] ? 'Purchased' : 'Gifted'
     const isHodlerSpan = document.createElement('span')
     isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px text-grey5'
-    isHodlerSpan.title = 'Coin holder'
+    isHodlerSpan.title = `${holdsOrPurchased} ${parseFloat(holding.toFixed(4))} of your coin`
     isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
     isHodlerSpan.innerHTML = '<i class="fas fa-coins"></i>'
 
