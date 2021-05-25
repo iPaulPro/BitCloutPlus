@@ -1,7 +1,8 @@
-// Copyright Paul Burke 2021. All Rights Reserved.
-// Github: @ipaulpro/bitcloutplus
-// This file is licensed under the MIT License.
-// License text available at https://opensource.org/licenses/MIT
+/*
+ Copyright (C) Paul Burke 2021
+ Github: @ipaulpro/bitcloutplus
+ Distributed under the MIT License (license terms are at http://opensource.org/licenses/MIT).
+ */
 
 const apiBaseUrl = 'https://bitclout.com/api/v0'
 const nanosInBitClout = 1000000000
