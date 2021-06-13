@@ -265,31 +265,6 @@ const addNativeCoinPrice = function (userDataDiv, profile) {
   } catch (e) {}
 }
 
-const addFounderReward = function (userDataDiv, profile) {
-  const founderRewardId = 'plus-profile-founder-reward'
-  if (document.getElementById(founderRewardId)) return
-
-  try {
-    const userDataFooter = userDataDiv.lastElementChild
-
-    const basisPoints = profile['CoinEntry']['CreatorBasisPoints']
-    const founderReward = (basisPoints / 100).toFixed(0)
-    const feeSpan = document.createElement('span')
-    feeSpan.className = 'font-weight-bold'
-    feeSpan.innerText = `${founderReward}`
-
-    const labelSpan = document.createElement('span')
-    labelSpan.className = 'fc-muted'
-    labelSpan.innerHTML = 'Founder Reward&nbsp;&nbsp;'
-
-    const div = document.createElement('div')
-    div.id = founderRewardId
-    div.innerHTML = `${feeSpan.outerHTML}% ${labelSpan.outerHTML}`
-
-    userDataFooter.insertBefore(div, userDataFooter.lastElementChild)
-  } catch (e) {}
-}
-
 const addSellButton = function () {
   const sellButtonId = 'plus-profile-sell-btn'
   if (document.getElementById(sellButtonId)) return
@@ -1227,7 +1202,6 @@ function enrichProfileFromApi () {
     if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
     addNativeCoinPrice(userDataDiv, pageProfile)
-    addFounderReward(userDataDiv, pageProfile)
     addHoldersCount(pageProfile)
 
     const pubKey = pageProfile['PublicKeyBase58Check']
