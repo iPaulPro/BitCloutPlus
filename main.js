@@ -762,9 +762,10 @@ function buildTributeUsernameMenuTemplate (item) {
 
   nameDiv.appendChild(priceDiv)
 
+  const pubKey = item.original['PublicKeyBase58Check']
   const img = document.createElement('img')
   img.className = 'tribute-avatar'
-  img.src = item.original['ProfilePic']
+  img.src = `https://bitclout.com/api/v0/get-single-profile-picture/${pubKey}?fallback=https://bitclout.com/assets/img/default_profile_pic.png`
 
   const row = document.createElement('div')
   row.className = 'row no-gutters'
