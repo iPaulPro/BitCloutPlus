@@ -427,8 +427,11 @@ const addHodlerBadgeProfile = function (userDataDiv, hodlersList, pubKey) {
     const holding = hodler['BalanceNanos'] / nanosInBitClout
     const holdsOrPurchased = hodler['HasPurchased'] ? 'Purchased' : 'Gifted'
     const isHodlerSpan = document.createElement('span')
+    const formattedHoldings = parseFloat(holding.toFixed(6))
+    if (formattedHoldings === 0) return
+
     isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px text-grey5'
-    isHodlerSpan.title = `${holdsOrPurchased} ${parseFloat(holding.toFixed(4))} of your coin`
+    isHodlerSpan.title = `${holdsOrPurchased} ${formattedHoldings} of your coin`
     isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
     isHodlerSpan.innerHTML = '<i class="fas fa-coins"></i>'
 
@@ -961,7 +964,7 @@ const replacePostBtn = () => {
   if (!longPostEnabled) return
 
   const form = document.querySelector('create-post-form') || document.querySelector('feed')
-  const container = form.querySelector('feed-create-post')
+  const container = form && form.querySelector('feed-create-post')
   if (!container) return
 
   const postButton = getPostButton(container)
