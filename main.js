@@ -10,7 +10,7 @@ const maxPostLength = 1000
 const postButtonClass = 'plus-btn-submit-post'
 
 let timer, currentUrl
-let identityFrame, identityWindow, identityUsers
+let identityWindow, identityUsers
 let pendingSignTransactionId, pendingTransactionHex
 let searchAbortController
 
@@ -832,6 +832,9 @@ const sendSignTransactionMsg = (identity, transactionHex, id) => {
   pendingSignTransactionId = id
   pendingTransactionHex = transactionHex
 
+  const identityFrame = document.getElementById('identity')
+  if (!identityFrame) throw 'No identity frame found'
+
   identityFrame.contentWindow.postMessage({
     id: id,
     service: 'identity',
@@ -1215,9 +1218,7 @@ function handleUnknownMessage (payload) {
 const handleMessage = (message) => {
   const { data: { id: id, method: method, payload: payload } } = message
 
-  if (method === 'initialize') {
-    identityFrame = document.getElementById("identity")
-  } else if (method === 'login') {
+ if (method === 'login') {
     handleLogin(payload)
   } else if (id === pendingSignTransactionId) {
     pendingSignTransactionId = null
