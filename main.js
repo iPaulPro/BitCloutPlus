@@ -639,7 +639,7 @@ const enrichWallet = function (page) {
 
     const cloutSpan = document.createElement('span')
     cloutSpan.className = 'text-muted fs-14px font-weight-normal'
-    cloutSpan.innerHTML = `${(holdingsCloutValue + balanceCloutValue).toFixed(4)} <span class="text-muted fs-12px font-weight-normal">BCLT</span>`
+    cloutSpan.innerHTML = `${(holdingsCloutValue + balanceCloutValue).toFixed(4)} <span class="text-muted fs-12px font-weight-normal">$CLOUT</span>`
 
     const totalDiv = document.createElement('div')
     totalDiv.className = 'ml-auto mr-15px'
@@ -679,7 +679,7 @@ const enrichBalanceBox = function (profile) {
     const creatorCoinPriceUsdId = 'plus-creator-coin-price-usd'
     const existingElement = document.getElementById(creatorCoinBalanceId)
     if (existingElement) {
-      document.getElementById(creatorCoinPriceId).innerHTML = ` ${nativePrice} BCLT `
+      document.getElementById(creatorCoinPriceId).innerHTML = ` ${nativePrice} $CLOUT `
       document.getElementById(creatorCoinPriceUsdId).innerHTML = formatPriceUsd(coinPriceUsd)
       return
     }
@@ -697,11 +697,11 @@ const enrichBalanceBox = function (profile) {
     coinNameDiv.innerText = `Your Coin`
 
     const coinPriceDiv = document.createElement('div')
-    coinPriceDiv.className = 'd-flex align-items-center justify-content-end flex-wrap'
+    coinPriceDiv.className = 'd-flex flex-column align-items-end justify-content-end flex-wrap'
 
     const coinPriceValueDiv = document.createElement('div')
     coinPriceValueDiv.id = creatorCoinPriceId
-    coinPriceValueDiv.innerHTML = ` ${nativePrice} BCLT `
+    coinPriceValueDiv.innerHTML = ` ${nativePrice} $CLOUT `
 
     const coinPriceConversionDiv = document.createElement('div')
     coinPriceConversionDiv.className = 'd-flex text-muted'
