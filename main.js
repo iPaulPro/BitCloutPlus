@@ -960,7 +960,8 @@ const onPostButtonClick = (postButton) => {
 const replacePostBtn = () => {
   if (!longPostEnabled) return
 
-  const container = document.querySelector('feed-create-post')
+  const form = document.querySelector('create-post-form') || document.querySelector('feed')
+  const container = form.querySelector('feed-create-post')
   if (!container) return
 
   const postButton = getPostButton(container)
