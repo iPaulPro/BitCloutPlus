@@ -23,11 +23,11 @@ const dollarFormatter = new Intl.NumberFormat('en-US', {
 })
 
 const getSpotPrice = function () {
-  const elementList = document.getElementsByClassName('right-bar-creators__balance-box')
+  const balanceBox = document.getElementsByClassName('right-bar-creators__balance-box').item(0)
 
   try {
-    const priceContainerDiv = elementList.item(0).firstElementChild
-    const priceDiv = priceContainerDiv.children.item(1)
+    const priceContainerDiv = balanceBox.firstElementChild
+    const priceDiv = priceContainerDiv.children.item(1).firstElementChild
     return parseFloat(priceDiv.innerHTML.replace(/[^0-9.]+/g, ''))
   } catch (e) {}
 
@@ -226,45 +226,6 @@ const searchUsernames = function (query, cb) {
     .catch(() => {})
 }
 
-const addNativeCoinPrice = function (userDataDiv, profile) {
-  const nativePriceId = 'plus-profile-native-price'
-  if (document.getElementById(nativePriceId)) return
-
-  try {
-    const userDataFooter = userDataDiv.lastElementChild
-
-    const coinPriceNanos = profile['CoinPriceBitCloutNanos']
-    const nativePrice = (coinPriceNanos / nanosInBitClout).toFixed(2)
-
-    const tooltipAttr = document.createAttribute('data-bs-toggle')
-    tooltipAttr.value = 'tooltip'
-
-    let img = document.createElement('img')
-    img.style.width = '11px'
-    img.style.opacity = '0.7'
-    img.style.marginBottom = '2px'
-    img.className = "mr-1"
-    img.src = chrome.runtime.getURL('img/bitclout-logo.svg')
-
-    let span = document.createElement('span')
-    span.id = nativePriceId
-    span.className = 'fc-muted mr-2 fs-14px'
-    span.style.fontWeight = '500'
-    span.innerHTML = `(${img.outerHTML}${nativePrice})`
-    span.title = '$BitClout price'
-    span.setAttributeNode(tooltipAttr)
-
-    for (const child of userDataFooter.children) {
-      if (child.tagName === 'DIV'
-        && child.children.length > 0
-        && child.firstElementChild.innerHTML.trim().startsWith('~$')
-      ) {
-        child.firstElementChild.appendChild(span)
-      }
-    }
-  } catch (e) {}
-}
-
 const addSellButton = function () {
   const sellButtonId = 'plus-profile-sell-btn'
   if (document.getElementById(sellButtonId)) return
@@ -452,38 +413,6 @@ const addFollowsYouBadgeProfile = function (userDataDiv, followingList) {
     followsYouSpan.innerText = 'Follows you'
 
     usernameDiv.appendChild(followsYouSpan)
-  }
-}
-
-const addFollowingCountProfile = function (userDataDiv, followingCount) {
-  if (!userDataDiv || !followingCount) return
-
-  const userDataFooter = userDataDiv.lastElementChild
-  if (!userDataFooter) return
-
-  userDataFooter.className = userDataFooter.className + ' mb-1 mt-3'
-
-  const countSpan = document.createElement('span')
-  countSpan.className = 'font-weight-bold'
-  countSpan.innerText = followingCount.toString()
-
-  const labelSpan = document.createElement('span')
-  labelSpan.className = 'fc-muted'
-  labelSpan.innerHTML = 'Following&nbsp;&nbsp;'
-
-  const a = document.createElement('a')
-  a.className = 'link--unstyled'
-  a.href = document.location.pathname + '/following'
-  a.innerHTML = `${countSpan.outerHTML} ${labelSpan.outerHTML}`
-
-  for (const child of userDataFooter.children) {
-    if (child.tagName === 'DIV' && child.children.length > 1) {
-      const coinPriceLabelDiv = child.children.item(1)
-      if (coinPriceLabelDiv && coinPriceLabelDiv.innerHTML.startsWith('Coin Price')) {
-        userDataFooter.insertBefore(a, child)
-        break
-      }
-    }
   }
 }
 
@@ -698,56 +627,27 @@ const enrichProfile = function () {
   addHolderEnrichments()
 }
 
-const enrichWallet = function () {
-  const coinCountId = 'plus-trade-founder-fee-percentage'
-  if (document.getElementById(coinCountId)) return
-
+const enrichWallet = function (page) {
   try {
-    const coinElements = document.getElementsByClassName('holdings__creator-coin-name')
+    const holdingsDiv = page.querySelectorAll('.holdings__divider').item(1)
+    const holdingsValueDiv = holdingsDiv.lastElementChild
+    const holdingsCloutValue = parseFloat(holdingsValueDiv.children.item(2).innerHTML.replace(/[^0-9.]+/g, ''))
 
-    const coinCount = document.createElement('span')
-    coinCount.id = coinCountId
-    coinCount.className = 'fc-muted fs-16px ml-1'
-    coinCount.innerText = `(${coinElements.length})`
-
-    const contentSection = document.getElementsByClassName('global__mobile-scrollable-section').item(0)
-    const holdingsDiv = contentSection.children.item(2)
-    const labelDiv = holdingsDiv.firstElementChild
-    labelDiv.appendChild(coinCount)
-
-    const cloutSpotPrice = getSpotPrice()
-    const valueDiv = holdingsDiv.lastElementChild
-    const usdValue = parseFloat(valueDiv.firstElementChild.innerHTML.replace(/[^0-9.]+/g, ''))
-    const cloutValue = usdValue / cloutSpotPrice
-
-    const cloutPrice = document.createElement('p')
-    cloutPrice.className = 'fc-muted fs-14px ml-3'
-    cloutPrice.innerHTML = `${cloutValue.toFixed(4)} BCLT`
-    valueDiv.appendChild(cloutPrice)
-
-    const scrollableSection = document.getElementsByClassName('global__mobile-scrollable-section').item(0)
+    const scrollableSection = page.querySelector('.global__mobile-scrollable-section')
     const balanceValuesDiv = scrollableSection.children.item(1).firstElementChild.lastElementChild
     const balanceCloutValue = parseFloat(balanceValuesDiv.firstElementChild.innerHTML.trim())
-    const balanceUsdValue = parseFloat(balanceValuesDiv.lastElementChild.innerHTML.replace(/[^0-9.]+/g, ''))
 
     const cloutSpan = document.createElement('span')
     cloutSpan.className = 'text-muted fs-14px font-weight-normal'
-    cloutSpan.innerHTML = `${(cloutValue + balanceCloutValue).toFixed(4)} <span class="text-muted fs-12px font-weight-normal">BCLT</span>`
+    cloutSpan.innerHTML = `${(holdingsCloutValue + balanceCloutValue).toFixed(4)} <span class="text-muted fs-12px font-weight-normal">BCLT</span>`
 
-    const usdSpan = document.createElement('span')
-    usdSpan.className = 'fs-16px'
-    const usdValueText = dollarFormatter.format(usdValue + balanceUsdValue)
-    usdSpan.innerHTML = `${usdValueText} <span class="text-muted fs-14px font-weight-normal">USD</span>`
+    const totalDiv = document.createElement('div')
+    totalDiv.className = 'ml-auto mr-15px'
+    totalDiv.style.lineHeight = '1.2'
+    totalDiv.appendChild(cloutSpan)
 
-    const totalSpan = document.createElement('span')
-    totalSpan.className = 'ml-auto mr-15px'
-    totalSpan.style.lineHeight = '1.2'
-    totalSpan.appendChild(usdSpan)
-    totalSpan.appendChild(document.createElement('br'))
-    totalSpan.appendChild(cloutSpan)
-
-    const topBar = document.getElementsByClassName('global__top-bar').item(0)
-    topBar.appendChild(totalSpan)
+    const topBar = document.getElementsByClassName('global__top-bar').item(0).children.item(1).children.item(1)
+    topBar.appendChild(totalDiv)
   } catch (e) {}
 }
 
@@ -1142,12 +1042,6 @@ const appRootObserverCallback = function () {
     return
   }
 
-  const wallet = document.querySelector('wallet')
-  if (wallet) {
-    enrichWallet()
-    return
-  }
-
   const tradePage = document.querySelector('trade-creator-page')
   if (tradePage) {
     addTransferRecipientUsernameAutocomplete("Enter a bitclout public key or recipient")
@@ -1191,7 +1085,6 @@ function enrichProfileFromApi () {
     if (!userDataDiv) return Promise.reject()
 
     addFollowsYouBadgeProfile(userDataDiv, followingRes['PublicKeyToProfileEntry'])
-    addFollowingCountProfile(userDataDiv, followingRes['NumFollowers'])
 
     if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
@@ -1201,7 +1094,6 @@ function enrichProfileFromApi () {
 
     if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
-    addNativeCoinPrice(userDataDiv, pageProfile)
     addHoldersCount(pageProfile)
 
     const pubKey = pageProfile['PublicKeyBase58Check']
@@ -1250,6 +1142,12 @@ const globalContainerObserverCallback = function () {
   const profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
     observeProfileInnerContent()
+    return
+  }
+
+  const wallet = document.querySelector('wallet')
+  if (wallet) {
+    enrichWallet(wallet)
     return
   }
 
