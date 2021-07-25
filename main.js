@@ -168,6 +168,20 @@ const getHodlersByPublicKey = function (pubKey) {
     .then(res => res['Hodlers'])
 }
 
+const isSoundCloudFromURL = (url) => {
+  const pattern = /\bsoundcloud\.com$/
+  return pattern.test(url.hostname)
+}
+
+const isSoundCloudLink = (link) => {
+  try {
+    const url = new URL(link)
+    return isSoundCloudFromURL(url)
+  } catch (e) {
+    return false
+  }
+}
+
 const submitPost = (pubKey, input, image, video) => {
   const bodyObj = {
     Body: input
@@ -183,7 +197,11 @@ const submitPost = (pubKey, input, image, video) => {
     MinFeeRateNanosPerKB: 1000
   }
 
-  if (video) body.PostExtraData = { EmbedVideoURL: video }
+  if (video) {
+      body.PostExtraData = {
+        EmbedVideoURL: isSoundCloudLink(video) ? `https://w.soundcloud.com/player/?url=${video}?hide_related=true&show_comments=false` : video
+      }
+  }
 
   const request = buildRequest('omit')
   request.body = JSON.stringify(body)
@@ -194,7 +212,7 @@ const submitPost = (pubKey, input, image, video) => {
 }
 
 const submitTransaction = (transactionHex) => {
-  if (!transactionHex) return Promise.reject('Missing required parameter tranactionHex')
+  if (!transactionHex) return Promise.reject('Missing required parameter transactionHex')
 
   const request = buildRequest('omit')
   request.body = JSON.stringify({
@@ -600,7 +618,7 @@ const addWalletMenuItem = function (menu) {
     a.innerHTML = '<i class="fas fa-wallet"></i> View Wallet '
 
     const username = getUsernameFromUrl()
-    a.onclick = () => window.location.href = `https://bitcloutinsights.com/u/${username}`
+    a.onclick = () => window.location.href = `https://signalclout.com/u/${username}/wallet`
 
     menu.insertBefore(a, menu.lastElementChild)
   } catch (e) {}
