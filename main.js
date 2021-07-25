@@ -230,6 +230,33 @@ const searchUsernames = function (query, cb) {
     .catch(() => {})
 }
 
+const addNativeCoinPrice = (userDataDiv, profile) => {
+  const nativePriceId = 'plus-profile-native-price'
+
+  if (!userDataDiv || !profile || document.getElementById(nativePriceId)) return
+
+  const priceContainerDiv = userDataDiv.children.item(1)
+  if (!priceContainerDiv) return
+
+  const priceDiv = priceContainerDiv.firstElementChild
+
+  const coinPriceNanos = profile['CoinPriceBitCloutNanos']
+  const nativePrice = (coinPriceNanos / nanosInBitClout).toFixed(2)
+
+  const tooltipAttr = document.createAttribute('data-bs-toggle')
+  tooltipAttr.value = 'tooltip'
+
+  let span = document.createElement('span')
+  span.id = nativePriceId
+  span.className = 'plus-text-muted mr-2 fs-14px'
+  span.style.fontWeight = '500'
+  span.innerHTML = `(${nativePrice} $CLOUT)`
+  span.title = '$BitClout price'
+  span.setAttributeNode(tooltipAttr)
+
+  priceDiv.insertBefore(span, priceDiv.lastChild)
+}
+
 const addSellButton = function () {
   const sellButtonId = 'plus-profile-sell-btn'
   if (document.getElementById(sellButtonId)) return
@@ -477,12 +504,12 @@ const addNewPostButton = function () {
     const button = document.createElement('button');
     button.id = addPostButtonId
     button.type = 'button'
-    button.className = 'btn btn-secondary font-weight-bold fs-14px w-100'
+    button.className = 'btn btn-secondary font-weight-bold fs-14px w-100 ml-3'
     button.innerText = 'Post'
     button.onclick = () => window.location.href = 'posts/new'
 
     const div = document.createElement('div')
-    div.className = 'w-100 d-flex pt-15px pl-5 pr-3'
+    div.className = 'w-100 d-flex pt-15px pl-4 pr-3'
     div.appendChild(button)
 
     globalNav.appendChild(div)
@@ -1060,6 +1087,7 @@ function enrichProfileFromApi () {
 
     if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
+    addNativeCoinPrice(userDataDiv, pageProfile)
     addHoldersCount(pageProfile)
 
     const pubKey = pageProfile['PublicKeyBase58Check']
