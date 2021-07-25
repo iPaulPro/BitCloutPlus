@@ -4,7 +4,7 @@
  Distributed under the MIT License (license terms are at http://opensource.org/licenses/MIT).
  */
 
-const apiBaseUrl = 'https://bitclout.com/api/v0'
+const apiBaseUrl = `https://${window.location.hostname}/api/v0`
 const nanosInBitClout = 1000000000
 const maxPostLength = 1000
 const postButtonClass = 'plus-btn-submit-post'
@@ -786,7 +786,7 @@ function buildTributeUsernameMenuTemplate (item) {
   const pubKey = item.original['PublicKeyBase58Check']
   const img = document.createElement('img')
   img.className = 'tribute-avatar'
-  img.src = `https://bitclout.com/api/v0/get-single-profile-picture/${pubKey}?fallback=https://bitclout.com/assets/img/default_profile_pic.png`
+  img.src = `${apiBaseUrl}/get-single-profile-picture/${pubKey}?fallback=https://${window.location.hostname}/assets/img/default_profile_pic.png`
 
   const row = document.createElement('div')
   row.className = 'row no-gutters'
@@ -954,7 +954,7 @@ const onPostButtonClick = (postButton) => {
   postButton.innerHTML = spinner.outerHTML
 
   const postImage = container.getElementsByClassName('feed-post__image').item(0)
-  const hasImage = postImage && postImage.src && postImage.src.includes('images.bitclout.com')
+  const hasImage = postImage && postImage.src && postImage.src.includes(`images.${window.location.hostname}`)
   const image = hasImage ? postImage.src : undefined
 
   const postVideo = container.querySelector('input[type="url"]')
@@ -1199,6 +1199,8 @@ const onTransactionSigned = (payload) => {
   const transactionHex = payload['signedTransactionHex']
   if (!transactionHex) return
 
+  pendingTransactionHex = null
+
   submitTransaction(transactionHex).then(res => {
     const response = res['PostEntryResponse']
     if (response && response['PostHashHex']) {
@@ -1220,14 +1222,14 @@ const handleLogin = (payload) => {
   }
 }
 
-function handleUnknownMessage (payload) {
+const handleSignTransactionResponse = (payload) => {
   if (!payload) return
 
   if (payload['approvalRequired'] && pendingTransactionHex) {
+    const hostname = (window.location.hostname === 'love4src.com') ? 'identity.love4src.come' : 'identity.bitclout.com'
     identityWindow = window.open(
-      `https://identity.bitclout.com/approve?tx=${pendingTransactionHex}`, null,
+      `https://${hostname}/approve?tx=${pendingTransactionHex}`, null,
       'toolbar=no, width=800, height=1000, top=0, left=0')
-    pendingTransactionHex = null
   } else if (payload['signedTransactionHex']) {
     onTransactionSigned(payload)
   }
@@ -1239,8 +1241,7 @@ const handleMessage = (message) => {
  if (method === 'login') {
     handleLogin(payload)
   } else if (id === pendingSignTransactionId) {
-    pendingSignTransactionId = null
-    handleUnknownMessage(payload)
+    handleSignTransactionResponse(payload)
   }
 }
 

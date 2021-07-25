@@ -9,7 +9,9 @@
   "content_scripts": [
     {
       "matches": [
-        "https://bitclout.com/*"
+        "https://bitclout.com/*",
+        "https://ruclout.ru/*",
+        "https://love4src.com/*"
       ],
       "js": [
         "vendor/tribute/tribute.min.js",
