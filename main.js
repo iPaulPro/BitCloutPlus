@@ -65,20 +65,6 @@ const getCurrentIdentity = () => {
   return identityUsers[key]
 }
 
-function loadCSS(filename) {
-  const link = document.createElement("link")
-  link.href = chrome.runtime.getURL(`css/${filename}.css`)
-  link.id = filename
-  link.type = "text/css"
-  link.rel = "stylesheet"
-  document.getElementsByTagName("head")[0].appendChild(link)
-}
-
-function unloadCSS(file) {
-  const cssNode = document.getElementById(file)
-  cssNode && cssNode.parentNode.removeChild(cssNode)
-}
-
 const buildRequest = (credentials) => {
   return {
     'headers': {
@@ -427,7 +413,7 @@ const addFollowsYouBadgeProfile = function (userDataDiv, followingList) {
   let followsYou = followingList[loggedInKey]
   if (followsYou) {
     const followsYouSpan = document.createElement('span')
-    followsYouSpan.className = 'badge badge-pill badge-secondary ml-3 fs-12px text-grey5'
+    followsYouSpan.className = 'badge badge-pill badge-secondary ml-3 fs-12px'
     followsYouSpan.innerText = 'Follows you'
 
     usernameDiv.appendChild(followsYouSpan)
@@ -448,7 +434,7 @@ const addHodlerBadgeProfile = function (userDataDiv, hodlersList, pubKey) {
     const formattedHoldings = parseFloat(holding.toFixed(6))
     if (formattedHoldings === 0) return
 
-    isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px text-grey5'
+    isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px'
     isHodlerSpan.title = `${holdsOrPurchased} ${formattedHoldings} of your coin`
     isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
     isHodlerSpan.innerHTML = '<i class="fas fa-coins"></i>'
@@ -488,63 +474,18 @@ const addNewPostButton = function () {
   try {
     const globalNav = globalNavElements.item(0)
 
-    let button = document.createElement('button')
+    const button = document.createElement('button');
     button.id = addPostButtonId
     button.type = 'button'
-    button.className = 'btn btn-secondary font-weight-bold fs-14px'
+    button.className = 'btn btn-secondary font-weight-bold fs-14px w-100'
     button.innerText = 'Post'
     button.onclick = () => window.location.href = 'posts/new'
 
-    globalNav.appendChild(button)
-  } catch (e) {}
-}
-
-const toggleDarkMode = function (enabled) {
-  if (enabled) {
-    loadCSS('dark')
-    chrome.storage.sync.set({'darkMode' : true})
-  } else {
-    unloadCSS('dark')
-    chrome.storage.sync.set({'darkMode' : false})
-  }
-}
-
-const addDarkModeSwitch = function () {
-  let darkModeSwitchId = 'plus-dark-mode-switch'
-  if (document.getElementById(darkModeSwitchId)) return
-
-  const globalNavElements = document.getElementsByClassName('global__nav__inner')
-  try {
-    const globalNav = globalNavElements.item(0)
-    globalNav.classList.add('d-flex')
-    globalNav.classList.add('flex-column')
-
-    const input = document.createElement('input')
-    input.id = darkModeSwitchId
-    input.type = 'checkbox'
-    input.className = 'custom-control-input'
-    input.onclick = () => toggleDarkMode(input.checked)
-
-    const icon = document.createElement('i')
-    icon.className = 'fas fa-moon'
-    icon.setAttribute('aria-hidden', 'true')
-    icon.style.color = '#666'
-
-    const label = document.createElement('label')
-    label.className = 'custom-control-label'
-    label.setAttribute('for', darkModeSwitchId)
-    label.appendChild(icon)
-
     const div = document.createElement('div')
-    div.className = 'custom-control custom-switch mt-auto mb-4 ml-auto mr-auto'
-    div.appendChild(input)
-    div.appendChild(label)
+    div.className = 'w-100 d-flex pt-15px pl-5 pr-3'
+    div.appendChild(button)
 
     globalNav.appendChild(div)
-
-    chrome.storage.sync.get(['darkMode'], value => {
-      if (value.darkMode === true) input.checked = true
-    })
   } catch (e) {}
 }
 
@@ -659,8 +600,8 @@ const enrichWallet = function (page) {
     const balanceCloutValue = parseFloat(balanceValuesDiv.firstElementChild.innerHTML.trim())
 
     const cloutSpan = document.createElement('span')
-    cloutSpan.className = 'text-muted fs-14px font-weight-normal'
-    cloutSpan.innerHTML = `${(holdingsCloutValue + balanceCloutValue).toFixed(4)} <span class="text-muted fs-12px font-weight-normal">$CLOUT</span>`
+    cloutSpan.className = 'plus-text-muted fs-14px font-weight-normal'
+    cloutSpan.innerHTML = `${(holdingsCloutValue + balanceCloutValue).toFixed(4)} <span class="plus-text-muted fs-12px font-weight-normal">$CLOUT</span>`
 
     const totalDiv = document.createElement('div')
     totalDiv.className = 'ml-auto mr-15px'
@@ -725,7 +666,7 @@ const enrichBalanceBox = function (profile) {
     coinPriceValueDiv.innerHTML = ` ${nativePrice} $CLOUT `
 
     const coinPriceConversionDiv = document.createElement('div')
-    coinPriceConversionDiv.className = 'd-flex text-muted'
+    coinPriceConversionDiv.className = 'd-flex plus-text-muted'
 
     const coinPriceApproximateDiv = document.createElement('div')
     coinPriceApproximateDiv.className = 'ml-10px mr-10px'
@@ -750,7 +691,6 @@ const enrichBalanceBox = function (profile) {
 const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
-  addDarkModeSwitch()
 }
 
 function buildTributeUsernameMenuTemplate (item) {
@@ -758,14 +698,14 @@ function buildTributeUsernameMenuTemplate (item) {
   const bitcloutPrice = item.original['CoinPriceBitCloutNanos'] / nanosInBitClout
 
   const priceDiv = document.createElement('div')
-  priceDiv.className = 'text-muted fs-12px'
+  priceDiv.className = 'plus-text-muted fs-12px'
   priceDiv.innerText = `${dollarFormatter.format(spotPrice * bitcloutPrice)}`
 
   const verifiedIcon = document.createElement('i')
-  verifiedIcon.className = 'fas fa-check-circle fa-md ml-1 text-primary'
+  verifiedIcon.className = 'fas fa-check-circle fa-md ml-1 plus-text-primary'
 
   const reservedIcon = document.createElement('i')
-  reservedIcon.className = 'far fa-clock fa-md ml-1 text-muted'
+  reservedIcon.className = 'far fa-clock fa-md ml-1 plus-text-muted'
 
   let icon
   if (item.original['IsVerified']) {
@@ -910,7 +850,7 @@ function addPostErrorDiv(e, container) {
   btn.onclick = () => disableLongPost()
 
   const p = document.createElement('p')
-  p.className = 'text-muted fs-14px'
+  p.className = 'plus-text-muted fs-14px'
   p.innerHTML = `
       Trouble posting? Disabling long posting may help.
       <br>
@@ -1026,15 +966,15 @@ const addPostTextAreaListener = () => {
     if (!characterCounter) return
     characterCounter.innerText = `${characterCount} / ${maxPostLength}`
     if (characterCount > maxPostLength) {
-      characterCounter.classList.add('fc-red')
+      characterCounter.classList.add('plus-text-red')
       characterCounter.classList.remove('text-grey8A')
       characterCounter.classList.remove('text-warning')
     } else if (characterCount > 280) {
-      characterCounter.classList.remove('fc-red')
+      characterCounter.classList.remove('plus-text-red')
       characterCounter.classList.remove('text-grey8A')
       characterCounter.classList.add('text-warning')
     } else {
-      characterCounter.classList.remove('fc-red')
+      characterCounter.classList.remove('plus-text-red')
       characterCounter.classList.add('text-grey8A')
       characterCounter.classList.remove('text-warning')
     }
@@ -1247,10 +1187,6 @@ const handleMessage = (message) => {
 
 const init = function () {
   window.addEventListener('message', handleMessage)
-
-  chrome.storage.sync.get(['darkMode'], value => {
-    if (value.darkMode === true) loadCSS('dark')
-  })
 
   chrome.storage.local.get(['longPost'], items => {
     if (items.longPost === undefined) {
