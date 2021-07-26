@@ -782,26 +782,6 @@ const addPostUsernameAutocomplete = function () {
   }
 }
 
-const addTransferRecipientUsernameAutocomplete = function (placeholder) {
-  const transferInput = document.querySelectorAll(`input[placeholder="${placeholder}"]`).item(0)
-  if (!transferInput || transferInput.dataset && transferInput.dataset.tribute) return
-
-  const tribute = new Tribute({
-    autocompleteMode: true,
-    replaceTextSuffix: '',
-    values: (text, cb) => searchUsernames(text, users => cb(users)),
-    loadingItemTemplate: buildLoadingItemTemplate(),
-    menuItemTemplate: (item) => buildTributeUsernameMenuTemplate(item),
-    selectTemplate: (item) => {
-      if (typeof item === 'undefined') return null
-      return item.original.Username
-    },
-    fillAttr: 'Username',
-    lookup: 'Username'
-  })
-  tribute.attach(transferInput)
-}
-
 const sendSignTransactionMsg = (identity, transactionHex, id) => {
   const payload = {
     transactionHex: transactionHex
@@ -1031,12 +1011,6 @@ const appRootObserverCallback = function () {
   const profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
     enrichProfile()
-    return
-  }
-
-  const tradePage = document.querySelector('trade-creator-page')
-  if (tradePage) {
-    addTransferRecipientUsernameAutocomplete("Enter a bitclout public key or recipient")
     return
   }
 
