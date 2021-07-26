@@ -279,7 +279,7 @@ const addSellButton = function () {
   } catch (e) {}
 }
 
-const addHoldersCount = function (pageProfile) {
+const addHoldersCount = function (holderCount) {
   let profileDetails = document.querySelector('creator-profile-details')
   if (!profileDetails) return
 
@@ -295,7 +295,6 @@ const addHoldersCount = function (pageProfile) {
   const holderDiv = creatorCoinTabHeader.firstElementChild
   if (!holderDiv || !holderDiv.innerHTML.includes('Holders of')) return
 
-  const usersThatHodl = pageProfile['CoinEntry']['NumberOfHolders']
   const holderCountId = 'plus-profile-holder-count'
 
   let span
@@ -308,7 +307,7 @@ const addHoldersCount = function (pageProfile) {
     span.className = 'fc-muted fs-16px'
     holderDiv.appendChild(span)
   }
-  span.innerText = `(${usersThatHodl})`
+  span.innerText = `(${holderCount})`
 }
 
 function addHolderPositionRank (node, index, userHoldsOwnCoin) {
@@ -1088,7 +1087,6 @@ function enrichProfileFromApi () {
     if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
     addNativeCoinPrice(userDataDiv, pageProfile)
-    addHoldersCount(pageProfile)
 
     const pubKey = pageProfile['PublicKeyBase58Check']
     return Promise.resolve(pubKey)
@@ -1101,6 +1099,8 @@ function enrichProfileFromApi () {
 
       const userDataDiv = getProfileUserDataDiv()
       if (!userDataDiv) return Promise.reject()
+
+      addHoldersCount(hodlersList.length)
 
       addHodlerBadgeProfile(userDataDiv, hodlersList, pagePubKey)
     })
