@@ -5,7 +5,7 @@
  */
 
 const nanosInBitClout = 1000000000
-const maxPostLength = 1000
+const maxPostLength = 2000
 const postButtonClass = 'plus-btn-submit-post'
 
 let timer, currentUrl
