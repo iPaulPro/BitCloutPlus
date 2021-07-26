@@ -383,7 +383,7 @@ function highlightUserInHolderList (node, loggedInUsername) {
   } catch (e) { }
 }
 
-const addHolderEnrichments = function () {
+const addHolderEnrichments = function (coinsInCirculation) {
   const topCard = document.querySelector('creator-profile-top-card')
   const creatorProfileHodlers = document.querySelector('creator-profile-hodlers')
   if (!creatorProfileHodlers || observingHolders || !topCard) return
@@ -394,7 +394,6 @@ const addHolderEnrichments = function () {
 
   const pageUsername = getUsernameFromUrl()
   const loggedInUsername = getLoggedInUsername()
-  const circulation = getCoinsInCirculation(topCard)
 
   const firstHodlerNode = holdersList.childNodes.item(1)
   const firstHolderName = firstHodlerNode.querySelector('.text-truncate')
@@ -410,7 +409,7 @@ const addHolderEnrichments = function () {
       const index = Number(node.dataset.sid)
       highlightUserInHolderList(node, loggedInUsername)
       addHolderPositionRank(node, index, holdsOwnCoin)
-      addHolderPercentage(node, index, circulation)
+      addHolderPercentage(node, index, coinsInCirculation)
     }
   } catch (e) { }
 
@@ -422,7 +421,7 @@ const addHolderEnrichments = function () {
         const index = Number(node.dataset.sid)
         highlightUserInHolderList(node, loggedInUsername)
         addHolderPositionRank(node, index, holdsOwnCoin)
-        addHolderPercentage(node, index, circulation)
+        addHolderPercentage(node, index, coinsInCirculation)
       })
     })
   }).observe(holdersList, config)
@@ -611,8 +610,6 @@ const enrichProfile = function () {
   addWalletMenuItem(profileMenu)
   addInsightsMenuItem(profileMenu)
   addSendBitCloutMenuItem(profileMenu)
-
-  addHolderEnrichments()
 }
 
 const enrichWallet = function (page) {
@@ -1062,6 +1059,9 @@ function enrichProfileFromApi () {
 
     addNativeCoinPrice(userDataDiv, pageProfile)
 
+    const circulation = pageProfile['CoinEntry']['CoinsInCirculationNanos'] / nanosInBitClout
+    addHolderEnrichments(circulation)
+
     const pubKey = pageProfile['PublicKeyBase58Check']
     return Promise.resolve(pubKey)
 
@@ -1074,11 +1074,11 @@ function enrichProfileFromApi () {
       const userDataDiv = getProfileUserDataDiv()
       if (!userDataDiv) return Promise.reject()
 
-      addHoldersCount(hodlersList.length)
-
       addHodlerBadgeProfile(userDataDiv, hodlersList, pagePubKey)
     })
   }).then(() => getHodlersByUsername(pageUsername)).then(hodlersList => {
+    addHoldersCount(hodlersList.length)
+
     const loggedInUserIsHodler = hodlersList.find(hodler => {
       return hodler['HODLerPublicKeyBase58Check'] === loggedInPubKey
     })
