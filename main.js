@@ -4,7 +4,6 @@
  Distributed under the MIT License (license terms are at http://opensource.org/licenses/MIT).
  */
 
-const apiBaseUrl = `https://${window.location.hostname}/api/v0`
 const nanosInBitClout = 1000000000
 const maxPostLength = 1000
 const postButtonClass = 'plus-btn-submit-post'
@@ -63,27 +62,6 @@ const getCurrentIdentity = () => {
   if (!key || !storedIdentityUsers) return undefined
   const identityUsers = JSON.parse(storedIdentityUsers)
   return identityUsers[key]
-}
-
-const searchUsernames = function (query, cb) {
-  if (searchAbortController) {
-    searchAbortController.abort()
-  }
-
-  const request = buildRequest('omit')
-  request.body = JSON.stringify({
-    UsernamePrefix: query,
-    NumToFetch: 4
-  })
-
-  searchAbortController = new AbortController()
-  const { signal } = searchAbortController
-  request.signal = signal
-
-  return fetch(`${apiBaseUrl}/get-profiles`, request)
-    .then(res => res.json())
-    .then(res => { cb(res['ProfilesFound']) })
-    .catch(() => {})
 }
 
 const addNativeCoinPrice = (userDataDiv, profile) => {
@@ -358,7 +336,7 @@ const addNewPostButton = function () {
     button.id = addPostButtonId
     button.type = 'button'
     button.className = 'btn btn-secondary font-weight-bold fs-14px w-100 ml-3'
-    button.innerText = 'Post'
+    button.innerText = 'Create Post'
     button.onclick = () => window.location.href = 'posts/new'
 
     const div = document.createElement('div')
@@ -596,7 +574,7 @@ function buildTributeUsernameMenuTemplate (item) {
   const pubKey = item.original['PublicKeyBase58Check']
   const img = document.createElement('img')
   img.className = 'tribute-avatar'
-  img.src = `${apiBaseUrl}/get-single-profile-picture/${pubKey}?fallback=https://${window.location.hostname}/assets/img/default_profile_pic.png`
+  img.src = getProfilePhotoUrlForPublicKey(pubKey)
 
   const row = document.createElement('div')
   row.className = 'row no-gutters'

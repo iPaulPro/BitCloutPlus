@@ -1,17 +1,18 @@
 {
   "name": "BitClout Plus",
-  "description": "bitclout.com on steroids",
+  "description": "BitClout on steroids",
   "version": "0.5.1",
   "manifest_version": 3,
+  "author": "Paul Burke",
+  "homepage_url": "https://github.com/iPaulPro/BitCloutPlus",
+  "short_name": "BitClout+",
   "omnibox": {
     "keyword": "bc"
   },
   "content_scripts": [
     {
       "matches": [
-        "https://bitclout.com/*",
-        "https://ruclout.ru/*",
-        "https://love4src.com/*"
+        "https://bitclout.com/*"
       ],
       "js": [
         "vendor/tribute/tribute.min.js",
@@ -32,16 +33,6 @@
   },
   "permissions": [
     "storage"
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "css/*", "img/*"
-      ],
-      "matches": [
-        "https://bitclout.com/*"
-      ]
-    }
   ],
   "options_ui": {
     "page": "options.html",

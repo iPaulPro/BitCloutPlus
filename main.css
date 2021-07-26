@@ -68,15 +68,21 @@ bs-dropdown-container .dropdown-menu {
     /*margin: 0 1rem 0 2.5rem;*/
 }
 
-#plus-profile-sell-btn {
-    background-color: var(--secondary);
-    border-color: var(--secondary);
-    color: var(--grey);
-}
-
-#plus-add-new-post:hover, #plus-profile-sell-btn:hover {
+#plus-add-new-post:hover {
     background-color: var(--border);
     border-color: var(--border);
+    color: var(--text);
+}
+
+#plus-profile-sell-btn {
+    background-color: var(--border);
+    border-color: var(--border);
+    color: var(--textalt);
+}
+
+#plus-profile-sell-btn:hover {
+    background-color: var(--secondary);
+    border-color: var(--secondary);
     color: var(--text);
 }
 
