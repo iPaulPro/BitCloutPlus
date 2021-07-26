@@ -251,7 +251,6 @@ const addNativeCoinPrice = (userDataDiv, profile) => {
   span.className = 'plus-text-muted mr-2 fs-14px'
   span.style.fontWeight = '500'
   span.innerHTML = `(${nativePrice} $CLOUT)`
-  span.title = '$BitClout price'
   span.setAttributeNode(tooltipAttr)
 
   priceDiv.insertBefore(span, priceDiv.lastChild)
@@ -520,14 +519,17 @@ const addSendBitCloutMenuItem = function (menu) {
   let sendBitCloutId = 'plus-profile-menu-send-bitclout'
   if (document.getElementById(sendBitCloutId)) return
 
+  const topCard = document.querySelector('creator-profile-top-card')
+  if (!topCard) return
+
   try {
     const a = document.createElement('a')
     a.id = sendBitCloutId
     a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-    a.innerHTML = '<i class="fas fa-hand-holding-usd"></i> Send $BitClout '
+    a.innerHTML = '<i class="fas fa-hand-holding-usd"></i> Send $CLOUT '
 
-    const username = getUsernameFromUrl()
-    a.onclick = () => window.location.href = `send-bitclout?username=${username}`
+    const publicKey = topCard.querySelector('.creator-profile__ellipsis-restriction').innerText.trim()
+    a.onclick = () => window.location.href = `send-bitclout?public_key=${publicKey}`
 
     menu.insertBefore(a, menu.lastElementChild)
   } catch (e) {}
@@ -634,17 +636,6 @@ const enrichWallet = function (page) {
     const topBar = document.getElementsByClassName('global__top-bar').item(0).children.item(1).children.item(1)
     topBar.appendChild(totalDiv)
   } catch (e) {}
-}
-
-const enrichTransfer = function () {
-  const transferElement = document.querySelector('transfer-bitclout')
-  const recipientDiv = transferElement.children.item(2)
-  const usernameInput = recipientDiv.lastElementChild
-
-  if (usernameInput.value && usernameInput.value.length > 0) return
-
-  const params = new URLSearchParams(window.location.search)
-  usernameInput.value = params.get('username')
 }
 
 const formatPriceUsd = function (price) {
@@ -1008,12 +999,6 @@ const appRootObserverCallback = function () {
   const profilePage = document.querySelector('app-creator-profile-page')
   if (profilePage) {
     enrichProfile()
-    return
-  }
-
-  const transferPage = document.querySelector('transfer-bitclout-page')
-  if (transferPage) {
-    enrichTransfer()
   }
 }
 
