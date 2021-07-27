@@ -750,7 +750,7 @@ const onPostButtonClick = (postButton) => {
 }
 
 const replacePostBtn = () => {
-  if (!longPostEnabled) return
+  if (!longPostEnabled || document.querySelector(`.${postButtonClass}`)) return
 
   const form = document.querySelector('create-post-form') || document.querySelector('feed')
   const container = form && form.querySelector('feed-create-post')
@@ -935,12 +935,6 @@ const globalContainerObserverCallback = function () {
   const wallet = document.querySelector('wallet')
   if (wallet) {
     enrichWallet(wallet)
-    return
-  }
-
-  const transferPage = document.querySelector('transfer-bitclout-page')
-  if (transferPage) {
-    addTransferRecipientUsernameAutocomplete("Enter a public key or username.")
   }
 }
 
