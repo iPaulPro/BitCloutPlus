@@ -34,7 +34,7 @@ const getSpotPrice = function () {
 }
 
 const getLoggedInUsername = function () {
-  const elementList = document.getElementsByClassName('change-account-selector__ellipsis-restriction')
+  const elementList = document.getElementsByClassName('change-account-selector__acount-name')
 
   try {
     const changeAccountSelector = elementList.item(0)
@@ -64,7 +64,7 @@ const getCurrentIdentity = () => {
   return identityUsers[key]
 }
 
-const addNativeCoinPrice = (userDataDiv, profile) => {
+const addNativeCoinPriceToProfileHeader = (userDataDiv, profile) => {
   const nativePriceId = 'plus-profile-native-price'
 
   if (!userDataDiv || !profile || document.getElementById(nativePriceId)) return
@@ -195,18 +195,7 @@ function addHolderPercentage (node, index, circulation) {
   } catch (e) { }
 }
 
-function getCoinsInCirculation (topCard) {
-  try {
-    const valueBar = topCard.firstElementChild.lastElementChild
-    const circulationContainer = valueBar.firstElementChild
-    const circulationHtml = circulationContainer.firstElementChild.innerHTML.trim()
-    return parseFloat(circulationHtml.slice(2, circulationHtml.length))
-  } catch (e) {
-    return 0
-  }
-}
-
-function highlightUserInHolderList (node, loggedInUsername) {
+const highlightUserInHolderList = (node, loggedInUsername) => {
   try {
     const nameSpan = node.querySelector('.text-truncate')
     const holderUsername = nameSpan.innerText
@@ -214,7 +203,7 @@ function highlightUserInHolderList (node, loggedInUsername) {
       node.className = 'light-grey-divider'
     }
   } catch (e) { }
-}
+};
 
 const addHolderEnrichments = function (coinsInCirculation) {
   const topCard = document.querySelector('creator-profile-top-card')
@@ -261,9 +250,11 @@ const addHolderEnrichments = function (coinsInCirculation) {
   observingHolders = true
 }
 
-const addFollowsYouBadgeProfile = function (userDataDiv, followingList) {
+const addFollowsYouBadgeToProfileHeader = function (userDataDiv, followingList) {
+  const followsYouBadgeId = 'plus-profile-follows-you-badge'
   const loggedInKey = getLoggedInPublicKey()
-  if (!loggedInKey || !userDataDiv || !followingList || followingList.length === 0) return
+  const alreadyAdded = document.getElementById(followsYouBadgeId)
+  if (alreadyAdded || !loggedInKey || !userDataDiv || !followingList || followingList.length === 0) return
 
   const usernameDiv = userDataDiv.firstElementChild
   if (!usernameDiv) return
@@ -271,6 +262,7 @@ const addFollowsYouBadgeProfile = function (userDataDiv, followingList) {
   let followsYou = followingList[loggedInKey]
   if (followsYou) {
     const followsYouSpan = document.createElement('span')
+    followsYouSpan.id = followsYouBadgeId
     followsYouSpan.className = 'badge badge-pill badge-secondary ml-3 fs-12px'
     followsYouSpan.innerText = 'Follows you'
 
@@ -278,8 +270,10 @@ const addFollowsYouBadgeProfile = function (userDataDiv, followingList) {
   }
 }
 
-const addHodlerBadgeProfile = function (userDataDiv, hodlersList, pubKey) {
-  if (!userDataDiv || !hodlersList | !pubKey) return
+const addHodlerBadgeToProfileHeader = function (userDataDiv, hodlersList, pubKey) {
+  const holderBadgeId = 'plus-profile-holder-badge'
+  const alreadyAdded = document.getElementById(holderBadgeId);
+  if (alreadyAdded || !userDataDiv || !hodlersList || !pubKey) return
 
   const usernameDiv = userDataDiv.firstElementChild
   if (!usernameDiv) return
@@ -292,6 +286,7 @@ const addHodlerBadgeProfile = function (userDataDiv, hodlersList, pubKey) {
     const formattedHoldings = parseFloat(holding.toFixed(6))
     if (formattedHoldings === 0) return
 
+    isHodlerSpan.id = holderBadgeId
     isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px'
     isHodlerSpan.title = `${holdsOrPurchased} ${formattedHoldings} of your coin`
     isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
@@ -335,12 +330,12 @@ const addNewPostButton = function () {
     const button = document.createElement('button');
     button.id = addPostButtonId
     button.type = 'button'
-    button.className = 'btn btn-secondary font-weight-bold fs-14px w-100 ml-3'
+    button.className = 'btn btn-secondary font-weight-bold fs-14px ml-3'
     button.innerText = 'Create Post'
     button.onclick = () => window.location.href = 'posts/new'
 
     const div = document.createElement('div')
-    div.className = 'w-100 d-flex pt-15px pl-4 pr-3'
+    div.className = 'w-100 d-flex pt-3 pl-4 pr-2 pb-4'
     div.appendChild(button)
 
     globalNav.appendChild(div)
@@ -830,7 +825,7 @@ const appRootObserverCallback = function () {
 
   addGlobalEnrichments()
 
-  const profilePage = document.querySelector('app-creator-profile-page')
+  const profilePage = document.querySelector('creator-profile-page')
   if (profilePage) {
     enrichProfile()
   }
@@ -856,17 +851,32 @@ const getProfileUserDataDiv = function () {
   return children.item(3)
 }
 
-function enrichProfileFromApi () {
+const profileTabsObserver = new MutationObserver(mutations => {
+  if (document.querySelector('creator-profile-hodlers')) {
+    enrichProfileFromApi(mutations[0].target)
+  }
+})
+
+const observeProfileDetails = (profileDetailsDiv) => {
+  const observerConfig = { childList: true, subtree: false }
+  profileTabsObserver.disconnect()
+  profileTabsObserver.observe(profileDetailsDiv, observerConfig)
+}
+
+const enrichProfileFromApi = (profileDetailsDiv) => {
   const pageUsername = getUsernameFromUrl()
   if (!pageUsername) return
 
   const loggedInPubKey = getLoggedInPublicKey()
+  if (!loggedInPubKey) return
+
+  observeProfileDetails(profileDetailsDiv)
 
   getFollowing(pageUsername).then(followingRes => {
     const userDataDiv = getProfileUserDataDiv()
     if (!userDataDiv) return Promise.reject()
 
-    addFollowsYouBadgeProfile(userDataDiv, followingRes['PublicKeyToProfileEntry'])
+    addFollowsYouBadgeToProfileHeader(userDataDiv, followingRes['PublicKeyToProfileEntry'])
 
     if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
@@ -876,7 +886,7 @@ function enrichProfileFromApi () {
 
     if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
-    addNativeCoinPrice(userDataDiv, pageProfile)
+    addNativeCoinPriceToProfileHeader(userDataDiv, pageProfile)
 
     const circulation = pageProfile['CoinEntry']['CoinsInCirculationNanos'] / nanosInBitClout
     addHolderEnrichments(circulation)
@@ -893,7 +903,7 @@ function enrichProfileFromApi () {
       const userDataDiv = getProfileUserDataDiv()
       if (!userDataDiv) return Promise.reject()
 
-      addHodlerBadgeProfile(userDataDiv, hodlersList, pagePubKey)
+      addHodlerBadgeToProfileHeader(userDataDiv, hodlersList, pagePubKey)
     })
   }).then(() => getHodlersByUsername(pageUsername)).then(hodlersList => {
     addHoldersCount(hodlersList.length)
@@ -905,20 +915,20 @@ function enrichProfileFromApi () {
   }).catch(() => {})
 }
 
-function observeProfileInnerContent () {
-  const globalCenterInner = document.getElementsByClassName('global__center__inner')
-  if (globalCenterInner && globalCenterInner.length > 0) {
+const observeProfileInnerContent = (page) => {
+  const profileDetailsDiv = page.querySelector('creator-profile-details')
+  if (profileDetailsDiv) {
     const observerConfig = { childList: true, subtree: false }
     const observer = new MutationObserver(mutations => {
       mutations.forEach(mutation => {
         Array.from(mutation.addedNodes, node => {
-          if (node.nodeName !== 'SIMPLE-CENTER-LOADER') enrichProfileFromApi()
+          if (node.nodeName !== 'SIMPLE-CENTER-LOADER') enrichProfileFromApi(node)
         })
       })
     })
-    observer.observe(globalCenterInner[0].firstElementChild, observerConfig)
+    observer.observe(profileDetailsDiv, observerConfig)
   }
-}
+};
 
 const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
@@ -926,9 +936,9 @@ const globalContainerObserverCallback = function () {
   addPostTextAreaListener()
   restorePostDraft()
 
-  const profilePage = document.querySelector('app-creator-profile-page')
+  const profilePage = document.querySelector('creator-profile-page')
   if (profilePage) {
-    observeProfileInnerContent()
+    observeProfileInnerContent(profilePage)
     return
   }
 
