@@ -46,7 +46,8 @@ const getLoggedInUsername = function () {
 
 const getUsernameFromUrl = function () {
   const segments = new URL(document.location).pathname.split('/')
-  return segments.pop() || segments.pop()
+  if (segments[1] === 'u') return segments[2]
+  return undefined
 }
 
 const getLoggedInPublicKey = function () {
@@ -250,6 +251,14 @@ const addHolderEnrichments = function (coinsInCirculation) {
   observingHolders = true
 }
 
+const createFollowsYouBadge = (id) => {
+  const followsYouSpan = document.createElement('span')
+  if (id) followsYouSpan.id = id
+  followsYouSpan.className = 'badge badge-pill plus-badge plus-badge-icon ml-2 global__tooltip-icon plus-tooltip'
+  followsYouSpan.innerHTML = `<i class="fas fa-user-friends"><span class="plus-tooltip-text">Follows you</span></i>`
+  return followsYouSpan
+}
+
 const addFollowsYouBadgeToProfileHeader = function (userDataDiv, followingList) {
   const followsYouBadgeId = 'plus-profile-follows-you-badge'
   const loggedInKey = getLoggedInPublicKey()
@@ -261,11 +270,7 @@ const addFollowsYouBadgeToProfileHeader = function (userDataDiv, followingList) 
 
   let followsYou = followingList[loggedInKey]
   if (followsYou) {
-    const followsYouSpan = document.createElement('span')
-    followsYouSpan.id = followsYouBadgeId
-    followsYouSpan.className = 'badge badge-pill badge-secondary ml-3 fs-12px'
-    followsYouSpan.innerText = 'Follows you'
-
+    const followsYouSpan = createFollowsYouBadge(followsYouBadgeId)
     usernameDiv.appendChild(followsYouSpan)
   }
 }
@@ -287,10 +292,8 @@ const addHodlerBadgeToProfileHeader = function (userDataDiv, hodlersList, pubKey
     if (formattedHoldings === 0) return
 
     isHodlerSpan.id = holderBadgeId
-    isHodlerSpan.className = 'badge badge-pill badge-secondary ml-2 fs-12px'
-    isHodlerSpan.title = `${holdsOrPurchased} ${formattedHoldings} of your coin`
-    isHodlerSpan.setAttribute('bs-toggle', 'tooltip')
-    isHodlerSpan.innerHTML = '<i class="fas fa-coins"></i>'
+    isHodlerSpan.className = 'badge badge-pill plus-badge plus-badge-icon ml-2 global__tooltip-icon plus-tooltip'
+    isHodlerSpan.innerHTML = `<i class="fas fa-coins"><span class="plus-tooltip-text">${holdsOrPurchased} ${formattedHoldings} of your coin</span></i>`
 
     usernameDiv.appendChild(isHodlerSpan)
   }
@@ -872,7 +875,7 @@ const enrichProfileFromApi = (profileDetailsDiv) => {
 
   observeProfileDetails(profileDetailsDiv)
 
-  getFollowing(pageUsername).then(followingRes => {
+  getFollowingByUsername(pageUsername).then(followingRes => {
     const userDataDiv = getProfileUserDataDiv()
     if (!userDataDiv) return Promise.reject()
 
@@ -928,7 +931,49 @@ const observeProfileInnerContent = (page) => {
     })
     observer.observe(profileDetailsDiv, observerConfig)
   }
-};
+}
+
+const addFollowsYouBadgeToFollowingItems = (nodes, followerUsernames) => {
+  nodes.forEach(node => {
+    const buyLink = node.querySelector('.feed-post__coin-price-holder')
+    if (!buyLink) return
+
+    const username = buyLink.parentElement.firstElementChild.innerText.trim()
+    if (followerUsernames.indexOf(username) < 0) return
+
+    const followsYouSpan = createFollowsYouBadge()
+    buyLink.parentElement.insertBefore(followsYouSpan, buyLink.parentElement.lastElementChild)
+  })
+}
+
+const observeFollowingList = (page) => {
+  const loggedInPublicKey = getLoggedInPublicKey()
+  if (!loggedInPublicKey) return
+
+  const getFilteredSidNodes = (nodes) => Array.from(nodes).filter(node => node.dataset && node.dataset.sid)
+
+  getFollowersByPublicKey(loggedInPublicKey).then(res => res['PublicKeyToProfileEntry']).then(followersMap => {
+    const listDiv = page.querySelector('[ui-scroll]')
+    if (!listDiv) return
+
+    const followerValues = Object.values(followersMap)
+    const followerUsernames = followerValues.map(follower => follower ? follower['Username'] : "")
+
+    // Add to existing list items
+    const nodes = getFilteredSidNodes(listDiv.childNodes)
+    addFollowsYouBadgeToFollowingItems(nodes, followerUsernames)
+
+    // Listen for new list items
+    const observerConfig = { childList: true, subtree: false }
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        const nodes = getFilteredSidNodes(mutation.addedNodes)
+        addFollowsYouBadgeToFollowingItems(nodes, followerUsernames)
+      })
+    })
+    observer.observe(listDiv, observerConfig)
+  })
+}
 
 const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
@@ -945,6 +990,12 @@ const globalContainerObserverCallback = function () {
   const wallet = document.querySelector('wallet')
   if (wallet) {
     enrichWallet(wallet)
+    return
+  }
+
+  const following = document.querySelector('manage-follows')
+  if (following) {
+    observeFollowingList(following)
   }
 }
 

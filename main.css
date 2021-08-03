@@ -1,10 +1,5 @@
 /* Bootstrap overrides */
 
-creator-profile-top-card .badge-secondary {
-    background-color: var(--border);
-    color: var(--textalt);
-}
-
 bs-dropdown-container .dropdown-menu {
     min-width: 12rem !important;
 }
@@ -93,6 +88,39 @@ bs-dropdown-container .dropdown-menu {
     color: var(--text);
 }
 
-plus-text-red {
+.plus-text-red {
     color: var(--cred);
+}
+
+.plus-badge {
+    background-color: var(--secalt) !important;
+    color: var(--norm) !important;
+    padding: 0.3em 0.6em !important;
+    font-weight: normal !important;
+    font-size: 11px !important;
+}
+
+.plus-badge-icon {
+    padding: 0.5em !important;
+}
+
+.plus-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.plus-tooltip .plus-tooltip-text {
+    font-family: "Roboto", sans-serif;
+    visibility: hidden;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    padding: 0.5em 1em;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+}
+
+.plus-tooltip:hover .plus-tooltip-text {
+    visibility: visible;
 }
