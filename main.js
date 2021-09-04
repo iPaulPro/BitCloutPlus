@@ -147,7 +147,7 @@ const addHoldersCount = function (holderCount) {
 function addHolderPositionRank (node, index, userHoldsOwnCoin) {
   if (userHoldsOwnCoin && index === 0) return
 
-  node.querySelector('.text-truncate').style.maxWidth = '160px'
+  node.querySelector('.text-truncate').style.maxWidth = '160px !important'
 
   const itemId = 'plus-profile-holder-position-' + index
   const holderPositionClassName = 'plus-profile-holder-position'
@@ -180,14 +180,12 @@ function addHolderPositionRank (node, index, userHoldsOwnCoin) {
 
 function addHolderPercentage (node, index, circulation) {
   try {
-    const itemId = 'plus-profile-holder-percentage-' + index
-
     const heldColumnItem = node.firstChild.firstChild.childNodes.item(1)
     const coinsHeld = parseFloat(heldColumnItem.innerHTML)
 
     const holderPercentageClassName = 'plus-profile-holder-share'
     let span
-    const existingSpan = document.getElementById(itemId)
+    const existingSpan = node.querySelector(`.${holderPercentageClassName}`)
     if (existingSpan) {
       span = existingSpan
     } else {
@@ -485,6 +483,11 @@ const enrichBalanceBox = function (profile) {
   if (!profile) return
 
   try {
+    const jumio = document.querySelector('jumio-status')
+    if (jumio) {
+      jumio.parentElement.remove()
+    }
+
     const nativePrice = (profile['CoinPriceBitCloutNanos'] / nanosInBitClout).toFixed(2)
     const spotPrice = getSpotPrice()
     const coinPriceUsd = nativePrice * spotPrice
