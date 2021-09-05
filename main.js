@@ -368,7 +368,7 @@ const addSendBitCloutMenuItem = function (menu) {
     const publicKey = topCard.querySelector('.creator-profile__ellipsis-restriction').innerText.trim()
     a.onclick = () => window.location.href = `send-bitclout?public_key=${publicKey}`
 
-    menu.insertBefore(a, menu.lastElementChild)
+    menu.insertBefore(a, menu.firstElementChild)
   } catch (e) {}
 }
 
@@ -387,7 +387,7 @@ const addInsightsMenuItem = function (menu) {
     const username = getUsernameFromUrl()
     a.onclick = () => openInNewTab(`https://prosperclout.com/u/${username}`)
 
-    menu.insertBefore(a, menu.lastElementChild)
+    menu.insertBefore(a, menu.firstElementChild)
   } catch (e) {}
 }
 
@@ -406,7 +406,7 @@ const addHistoryMenuItem = function (menu) {
     const username = getUsernameFromUrl()
     a.onclick = () => openInNewTab(`https://bitcloutsignal.com/history/${username}`)
 
-    menu.insertBefore(a, menu.lastElementChild)
+    menu.insertBefore(a, menu.firstElementChild)
   } catch (e) {}
 }
 
@@ -425,7 +425,7 @@ const addWalletMenuItem = function (menu) {
     const username = getUsernameFromUrl()
     a.onclick = () => openInNewTab(`https://signalclout.com/u/${username}/wallet`)
 
-    menu.insertBefore(a, menu.lastElementChild)
+    menu.insertBefore(a, menu.firstElementChild)
   } catch (e) {}
 }
 
@@ -434,7 +434,7 @@ const getProfileMenu = function () {
   if (!dropdownContainer) return undefined
 
   const menu = dropdownContainer.getElementsByClassName('dropdown-menu')[0]
-  if (menu.firstElementChild.innerHTML.includes("Block")) {
+  if (menu.firstElementChild.innerHTML.includes("Message User")) {
     return menu
   }
   return undefined
@@ -445,10 +445,10 @@ const enrichProfile = function () {
   if (!profileDetails) return
 
   const profileMenu = getProfileMenu()
-  addHistoryMenuItem(profileMenu)
-  addWalletMenuItem(profileMenu)
-  addInsightsMenuItem(profileMenu)
   addSendBitCloutMenuItem(profileMenu)
+  addInsightsMenuItem(profileMenu)
+  addWalletMenuItem(profileMenu)
+  addHistoryMenuItem(profileMenu)
 }
 
 const enrichWallet = function (page) {
