@@ -502,11 +502,6 @@ const enrichBalanceBox = function (profile) {
   if (!profile) return
 
   try {
-    const jumio = document.querySelector('jumio-status')
-    if (jumio) {
-      jumio.parentElement.remove()
-    }
-
     const nativePrice = (profile['CoinPriceBitCloutNanos'] / nanosInBitClout).toFixed(2)
     const spotPrice = getSpotPrice()
     const coinPriceUsd = nativePrice * spotPrice
@@ -589,13 +584,13 @@ function buildTributeUsernameMenuTemplate (item) {
     icon = reservedIcon
   }
 
-  let username = item.string
-  if (icon) username += icon.outerHTML
+  const usernameSpan = document.createElement('span')
+  usernameSpan.innerText = item.original['Username']
+  if (icon) usernameSpan.appendChild(icon)
 
   const nameDiv = document.createElement('div')
   nameDiv.className = 'ml-1 pl-1'
-  nameDiv.innerText = username
-
+  nameDiv.appendChild(usernameSpan)
   nameDiv.appendChild(priceDiv)
 
   const pubKey = item.original['PublicKeyBase58Check']

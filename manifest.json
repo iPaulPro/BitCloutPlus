@@ -3,6 +3,9 @@
   "description": "BitClout on steroids",
   "version": "0.6.1",
   "manifest_version": 3,
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; frame-ancestors 'none';"
+  },
   "author": "Paul Burke",
   "homepage_url": "https://github.com/iPaulPro/BitCloutPlus",
   "short_name": "BitClout+",
