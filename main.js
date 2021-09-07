@@ -27,7 +27,7 @@ const getSpotPrice = function () {
   try {
     const priceContainerDiv = balanceBox.firstElementChild
     const priceDiv = priceContainerDiv.children.item(1).firstElementChild
-    return parseFloat(priceDiv.innerHTML.replace(/[^0-9.]+/g, ''))
+    return parseFloat(priceDiv.innerText.replace(/[^0-9.]+/g, ''))
   } catch (e) {}
 
   return 0
@@ -38,7 +38,7 @@ const getLoggedInUsername = function () {
 
   try {
     const changeAccountSelector = elementList.item(0)
-    return changeAccountSelector.innerHTML.trim()
+    return changeAccountSelector.innerText.trim()
   } catch (e) {}
 
   return ''
@@ -85,7 +85,7 @@ const addNativeCoinPriceToProfileHeader = (userDataDiv, profile) => {
   span.id = nativePriceId
   span.className = 'plus-text-muted mr-2 fs-14px'
   span.style.fontWeight = '500'
-  span.innerHTML = `(${nativePrice} $CLOUT)`
+  span.innerText = `(${nativePrice} $CLOUT)`
   span.setAttributeNode(tooltipAttr)
 
   priceDiv.insertBefore(span, priceDiv.lastChild)
@@ -127,7 +127,7 @@ const addHoldersCount = function (holderCount) {
   if (!creatorCoinTabHeader) return
 
   const holderDiv = creatorCoinTabHeader.firstElementChild
-  if (!holderDiv || !holderDiv.innerHTML.includes('Holders of')) return
+  if (!holderDiv || !holderDiv.innerText.includes('Holders of')) return
 
   const holderCountId = 'plus-profile-holder-count'
 
@@ -181,7 +181,7 @@ function addHolderPositionRank (node, index, userHoldsOwnCoin) {
 function addHolderPercentage (node, index, circulation) {
   try {
     const heldColumnItem = node.firstChild.firstChild.childNodes.item(1)
-    const coinsHeld = parseFloat(heldColumnItem.innerHTML)
+    const coinsHeld = parseFloat(heldColumnItem.innerText)
 
     const holderPercentageClassName = 'plus-profile-holder-share'
     let span
@@ -193,7 +193,7 @@ function addHolderPercentage (node, index, circulation) {
       span.className = `${holderPercentageClassName} fc-muted fs-12px ml-1`
       heldColumnItem.appendChild(span)
     }
-    span.innerHTML = '(' + ((coinsHeld / circulation) * 100).toFixed(1) + '%)'
+    span.innerText = '(' + ((coinsHeld / circulation) * 100).toFixed(1) + '%)'
   } catch (e) { }
 }
 
@@ -253,10 +253,19 @@ const addHolderEnrichments = function (coinsInCirculation) {
 }
 
 const createFollowsYouBadge = (id) => {
+  const text = document.createElement('span')
+  text.className = 'plus-tooltip-text'
+  text.innerText = 'Follows you'
+
+  const icon = document.createElement('i')
+  icon.className = 'fas fa-user-friends'
+  icon.appendChild(text)
+
   const followsYouSpan = document.createElement('span')
   if (id) followsYouSpan.id = id
   followsYouSpan.className = 'badge badge-pill plus-badge plus-badge-icon ml-2 global__tooltip-icon plus-tooltip'
-  followsYouSpan.innerHTML = `<i class="fas fa-user-friends"><span class="plus-tooltip-text">Follows you</span></i>`
+  followsYouSpan.appendChild(icon)
+
   return followsYouSpan
 }
 
@@ -288,13 +297,21 @@ const addHodlerBadgeToProfileHeader = function (userDataDiv, hodlersList, pubKey
   if (hodler) {
     const holding = hodler['BalanceNanos'] / nanosInBitClout
     const holdsOrPurchased = hodler['HasPurchased'] ? 'Purchased' : 'Gifted'
-    const isHodlerSpan = document.createElement('span')
     const formattedHoldings = parseFloat(holding.toFixed(6))
     if (formattedHoldings === 0) return
 
+    const text = document.createElement('span')
+    text.className = 'plus-tooltip-text'
+    text.innerText = `${holdsOrPurchased} ${formattedHoldings} of your coin`
+
+    const icon = document.createElement('i')
+    icon.className = 'fas fa-coins'
+    icon.appendChild(text)
+
+    const isHodlerSpan = document.createElement('span')
     isHodlerSpan.id = holderBadgeId
     isHodlerSpan.className = 'badge badge-pill plus-badge plus-badge-icon ml-2 global__tooltip-icon plus-tooltip'
-    isHodlerSpan.innerHTML = `<i class="fas fa-coins"><span class="plus-tooltip-text">${holdsOrPurchased} ${formattedHoldings} of your coin</span></i>`
+    isHodlerSpan.appendChild(icon)
 
     usernameDiv.appendChild(isHodlerSpan)
   }
@@ -310,7 +327,7 @@ const addEditProfileButton = function () {
       const profileDiv = button.firstElementChild.lastElementChild
       const profileAnchor = profileDiv.firstElementChild
 
-      if (profileAnchor.innerHTML.includes('Profile')) {
+      if (profileAnchor.innerText.includes('Profile')) {
         const a = document.createElement('a')
         a.id = editProfileButtonId
         a.href = 'update-profile'
@@ -350,6 +367,23 @@ const openInNewTab = url => {
   window.open(url, '_blank').focus()
 }
 
+const createMenuItem = (id, iconClassName, title) => {
+  const icon = document.createElement('i')
+  icon.className = `fas ${iconClassName}`
+
+  const text = document.createElement('span')
+  text.innerText = ` ${title}`
+
+  const a = document.createElement('a')
+  a.id = id
+  a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
+
+  a.appendChild(icon)
+  a.appendChild(text)
+
+  return a
+}
+
 const addSendBitCloutMenuItem = function (menu) {
   if (!menu) return
 
@@ -360,14 +394,9 @@ const addSendBitCloutMenuItem = function (menu) {
   if (!topCard) return
 
   try {
-    const a = document.createElement('a')
-    a.id = sendBitCloutId
-    a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-    a.innerHTML = '<i class="fas fa-hand-holding-usd"></i> Send $CLOUT '
-
+    const a = createMenuItem(sendBitCloutId, 'fa-hand-holding-usd', 'Send $CLOUT')
     const publicKey = topCard.querySelector('.creator-profile__ellipsis-restriction').innerText.trim()
     a.onclick = () => window.location.href = `send-bitclout?public_key=${publicKey}`
-
     menu.insertBefore(a, menu.firstElementChild)
   } catch (e) {}
 }
@@ -379,14 +408,9 @@ const addInsightsMenuItem = function (menu) {
   if (document.getElementById(sendMessageId)) return
 
   try {
-    const a = document.createElement('a')
-    a.id = sendMessageId
-    a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-    a.innerHTML = '<i class="fas fa-chart-bar"></i> Insights '
-
+    const a = createMenuItem(sendMessageId, 'fa-chart-bar', 'Insights')
     const username = getUsernameFromUrl()
     a.onclick = () => openInNewTab(`https://prosperclout.com/u/${username}`)
-
     menu.insertBefore(a, menu.firstElementChild)
   } catch (e) {}
 }
@@ -398,14 +422,9 @@ const addHistoryMenuItem = function (menu) {
   if (document.getElementById(historyId)) return
 
   try {
-    const a = document.createElement('a')
-    a.id = historyId
-    a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-    a.innerHTML = '<i class="fas fa-chart-line"></i> Price History '
-
+    const a = createMenuItem(historyId, 'fa-chart-line', 'Price History')
     const username = getUsernameFromUrl()
     a.onclick = () => openInNewTab(`https://bitcloutsignal.com/history/${username}`)
-
     menu.insertBefore(a, menu.firstElementChild)
   } catch (e) {}
 }
@@ -417,14 +436,9 @@ const addWalletMenuItem = function (menu) {
   if (document.getElementById(walletId)) return
 
   try {
-    const a = document.createElement('a')
-    a.id = walletId
-    a.className = 'dropdown-menu-item d-block p-10px feed-post__dropdown-menu-item fc-default'
-    a.innerHTML = '<i class="fas fa-wallet"></i> View Wallet '
-
+    const a = createMenuItem(walletId, 'fa-wallet', 'View Wallet')
     const username = getUsernameFromUrl()
     a.onclick = () => openInNewTab(`https://signalclout.com/u/${username}/wallet`)
-
     menu.insertBefore(a, menu.firstElementChild)
   } catch (e) {}
 }
@@ -434,7 +448,7 @@ const getProfileMenu = function () {
   if (!dropdownContainer) return undefined
 
   const menu = dropdownContainer.getElementsByClassName('dropdown-menu')[0]
-  if (menu.firstElementChild.innerHTML.includes("Message User")) {
+  if (menu.firstElementChild.innerText.includes("Message User")) {
     return menu
   }
   return undefined
@@ -454,16 +468,21 @@ const enrichProfile = function () {
 const enrichWallet = function (page) {
   try {
     const holdingsDiv = page.querySelectorAll('.holdings__divider').item(1)
-    const holdingsValueDiv = holdingsDiv.lastElementChild
-    const holdingsCloutValue = parseFloat(holdingsValueDiv.children.item(2).innerHTML.replace(/[^0-9.]+/g, ''))
+    const holdingsValueDiv = holdingsDiv.lastElementChild.children.item(2)
+    const holdingsCloutValue = parseFloat(holdingsValueDiv.innerText.replace(/[^0-9.]+/g, ''))
 
-    const scrollableSection = page.querySelector('.global__mobile-scrollable-section')
-    const balanceValuesDiv = scrollableSection.children.item(1).firstElementChild.lastElementChild
-    const balanceCloutValue = parseFloat(balanceValuesDiv.firstElementChild.innerHTML.trim())
+    const container = page.querySelector('.container')
+    const balanceValuesDiv = container.firstElementChild.lastElementChild
+    const balanceCloutValue = parseFloat(balanceValuesDiv.firstElementChild.innerText.replace(/[^0-9.]+/g, ''))
+
+    const cloutLabelSpan = document.createElement('span')
+    cloutLabelSpan.className = 'plus-text-muted fs-12px font-weight-normal ml-2'
+    cloutLabelSpan.innerText = '$CLOUT'
 
     const cloutSpan = document.createElement('span')
     cloutSpan.className = 'plus-text-muted fs-14px font-weight-normal'
-    cloutSpan.innerHTML = `${(holdingsCloutValue + balanceCloutValue).toFixed(4)} <span class="plus-text-muted fs-12px font-weight-normal">$CLOUT</span>`
+    cloutSpan.innerText = `${(holdingsCloutValue + balanceCloutValue).toFixed(4)}`
+    cloutSpan.appendChild(cloutLabelSpan)
 
     const totalDiv = document.createElement('div')
     totalDiv.className = 'ml-auto mr-15px'
@@ -497,8 +516,8 @@ const enrichBalanceBox = function (profile) {
     const creatorCoinPriceUsdId = 'plus-creator-coin-price-usd'
     const existingElement = document.getElementById(creatorCoinBalanceId)
     if (existingElement) {
-      document.getElementById(creatorCoinPriceId).innerHTML = ` ${nativePrice} $CLOUT `
-      document.getElementById(creatorCoinPriceUsdId).innerHTML = formatPriceUsd(coinPriceUsd)
+      document.getElementById(creatorCoinPriceId).innerText = ` ${nativePrice} $CLOUT `
+      document.getElementById(creatorCoinPriceUsdId).innerText = formatPriceUsd(coinPriceUsd)
       return
     }
 
@@ -519,18 +538,18 @@ const enrichBalanceBox = function (profile) {
 
     const coinPriceValueDiv = document.createElement('div')
     coinPriceValueDiv.id = creatorCoinPriceId
-    coinPriceValueDiv.innerHTML = ` ${nativePrice} $CLOUT `
+    coinPriceValueDiv.innerText = ` ${nativePrice} $CLOUT `
 
     const coinPriceConversionDiv = document.createElement('div')
     coinPriceConversionDiv.className = 'd-flex plus-text-muted'
 
     const coinPriceApproximateDiv = document.createElement('div')
     coinPriceApproximateDiv.className = 'ml-10px mr-10px'
-    coinPriceApproximateDiv.innerHTML = ' ≈ '
+    coinPriceApproximateDiv.innerText = ' ≈ '
 
     const coinPriceUsdDiv = document.createElement('div')
     coinPriceUsdDiv.id = creatorCoinPriceUsdId
-    coinPriceUsdDiv.innerHTML = formatPriceUsd(coinPriceUsd)
+    coinPriceUsdDiv.innerText = formatPriceUsd(coinPriceUsd)
 
     coinPriceConversionDiv.appendChild(coinPriceApproximateDiv)
     coinPriceConversionDiv.appendChild(coinPriceUsdDiv)
@@ -575,7 +594,7 @@ function buildTributeUsernameMenuTemplate (item) {
 
   const nameDiv = document.createElement('div')
   nameDiv.className = 'ml-1 pl-1'
-  nameDiv.innerHTML = username
+  nameDiv.innerText = username
 
   nameDiv.appendChild(priceDiv)
 
@@ -593,7 +612,7 @@ function buildTributeUsernameMenuTemplate (item) {
 }
 
 function buildLoadingItemTemplate () {
-  return `<div class="row no-gutters fs-15px p-3">Loading...</div>`
+  return `<div class="row no-gutters fs-15px p-3 plus-text-muted">Loading...</div>`
 }
 
 const addPostUsernameAutocomplete = function () {
@@ -657,7 +676,7 @@ const getPostButton = (container) => {
   const primaryButtons = container.querySelectorAll('.btn-primary')
   let postButton
   for (let primaryButton of primaryButtons) {
-    if (primaryButton.innerHTML.includes('Post')) {
+    if (primaryButton.innerText.includes('Post')) {
       postButton = primaryButton
       break
     }
@@ -685,16 +704,28 @@ function addPostErrorDiv(e, container) {
   btn.innerText = 'Disable long posting'
   btn.onclick = () => disableLongPost()
 
+  const textarea = document.createElement('textarea')
+  textarea.className = 'w-100'
+  textarea.rows = 6
+  textarea.innerText = `${(e.stack || e)}`
+
+  const span = document.createElement('span')
+  span.innerText = 'Trouble posting? Disabling long posting may help.'
+
+  const a = document.createElement('a')
+  a.href = '/u/paulburke'
+  a.innerText = '@paulburke'
+
+  const contact = document.createElement('span')
+  contact.className = 'd-block my-2'
+  contact.innerText = 'Please report this to '
+  contact.appendChild(a)
+
   const p = document.createElement('p')
   p.className = 'plus-text-muted fs-14px'
-  p.innerHTML = `
-      Trouble posting? Disabling long posting may help.
-      <br>
-      <br>
-      Please report this to <a href="/u/paulburke">@paulburke</a>:
-      <br>
-      <textarea class="w-100" rows="6">${(e.stack || e)}</textarea>
-    `
+  p.appendChild(span)
+  p.appendChild(contact)
+  p.appendChild(textarea)
 
   const div = document.createElement('div')
   div.className = 'p-2'
@@ -727,7 +758,8 @@ const onPostButtonClick = (postButton) => {
   spinner.dataset.role = 'status'
   spinner.appendChild(spinnerAlt)
 
-  postButton.innerHTML = spinner.outerHTML
+  postButton.innerText = ''
+  postButton.appendChild(spinner)
 
   const postImage = container.getElementsByClassName('feed-post__image').item(0)
   const hasImage = postImage && postImage.src && postImage.src.includes(`images.${window.location.hostname}`)
@@ -753,7 +785,7 @@ const onPostButtonClick = (postButton) => {
     addPostErrorDiv(e, container)
 
     postButton.classList.remove('disabled')
-    postButton.innerHTML = 'Post'
+    postButton.innerText = 'Post'
   })
 }
 
