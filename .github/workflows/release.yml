@@ -10,10 +10,11 @@ jobs:
     runs-on: ubuntu-latest
         
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
       - name: Create Zip
-        run: zip -r release.zip . -x ".git/*" ".github/*" ".gitignore" "README.md"
+        run: zip -r release.zip BitCloutPlus -x ".git/*" ".github/*" ".gitignore" "README.md"
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
