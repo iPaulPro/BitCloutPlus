@@ -269,52 +269,46 @@ const createFollowsYouBadge = (id) => {
   return followsYouSpan
 }
 
-const addFollowsYouBadgeToProfileHeader = function (userDataDiv, followingList) {
+const addFollowsYouBadgeToProfileHeader = function (userDataDiv, following) {
   const followsYouBadgeId = 'plus-profile-follows-you-badge'
-  const loggedInKey = getLoggedInPublicKey()
   const alreadyAdded = document.getElementById(followsYouBadgeId)
-  if (alreadyAdded || !loggedInKey || !userDataDiv || !followingList || followingList.length === 0) return
+
+  if (alreadyAdded || !userDataDiv || !following) return
 
   const usernameDiv = userDataDiv.firstElementChild
   if (!usernameDiv) return
 
-  let followsYou = followingList[loggedInKey]
-  if (followsYou) {
-    const followsYouSpan = createFollowsYouBadge(followsYouBadgeId)
-    usernameDiv.appendChild(followsYouSpan)
-  }
+  const followsYouSpan = createFollowsYouBadge(followsYouBadgeId)
+  usernameDiv.appendChild(followsYouSpan)
 }
 
-const addHodlerBadgeToProfileHeader = function (userDataDiv, hodlersList, pubKey) {
+const addHodlerBadgeToProfileHeader = function (userDataDiv, isHolding, balanceEntry) {
   const holderBadgeId = 'plus-profile-holder-badge'
   const alreadyAdded = document.getElementById(holderBadgeId);
-  if (alreadyAdded || !userDataDiv || !hodlersList || !pubKey) return
+  if (alreadyAdded || !userDataDiv || !isHolding) return
 
   const usernameDiv = userDataDiv.firstElementChild
   if (!usernameDiv) return
 
-  let hodler = hodlersList.find(user => user['HODLerPublicKeyBase58Check'] === pubKey)
-  if (hodler) {
-    const holding = hodler['BalanceNanos'] / nanosInBitClout
-    const holdsOrPurchased = hodler['HasPurchased'] ? 'Purchased' : 'Gifted'
-    const formattedHoldings = parseFloat(holding.toFixed(6))
-    if (formattedHoldings === 0) return
+  const holding = balanceEntry['BalanceNanos'] / nanosInBitClout
+  const holdsOrPurchased = balanceEntry['HasPurchased'] ? 'Purchased' : 'Gifted'
+  const formattedHoldings = parseFloat(holding.toFixed(6))
+  if (formattedHoldings === 0) return
 
-    const text = document.createElement('span')
-    text.className = 'plus-tooltip-text'
-    text.innerText = `${holdsOrPurchased} ${formattedHoldings} of your coin`
+  const text = document.createElement('span')
+  text.className = 'plus-tooltip-text'
+  text.innerText = `${holdsOrPurchased} ${formattedHoldings} of your coin`
 
-    const icon = document.createElement('i')
-    icon.className = 'fas fa-coins'
-    icon.appendChild(text)
+  const icon = document.createElement('i')
+  icon.className = 'fas fa-coins'
+  icon.appendChild(text)
 
-    const isHodlerSpan = document.createElement('span')
-    isHodlerSpan.id = holderBadgeId
-    isHodlerSpan.className = 'badge badge-pill plus-badge plus-badge-icon ml-2 global__tooltip-icon plus-tooltip'
-    isHodlerSpan.appendChild(icon)
+  const isHodlerSpan = document.createElement('span')
+  isHodlerSpan.id = holderBadgeId
+  isHodlerSpan.className = 'badge badge-pill plus-badge plus-badge-icon ml-2 global__tooltip-icon plus-tooltip'
+  isHodlerSpan.appendChild(icon)
 
-    usernameDiv.appendChild(isHodlerSpan)
-  }
+  usernameDiv.appendChild(isHodlerSpan)
 }
 
 const addEditProfileButton = function () {
@@ -384,18 +378,23 @@ const createMenuItem = (id, iconClassName, title) => {
   return a
 }
 
+const getPublicKeyFromPage = () => {
+  const topCard = document.querySelector('creator-profile-top-card')
+  if (!topCard) return
+
+  return topCard.querySelector('.creator-profile__ellipsis-restriction').innerText.trim()
+}
+
 const addSendBitCloutMenuItem = function (menu) {
   if (!menu) return
 
   let sendBitCloutId = 'plus-profile-menu-send-bitclout'
   if (document.getElementById(sendBitCloutId)) return
 
-  const topCard = document.querySelector('creator-profile-top-card')
-  if (!topCard) return
 
   try {
     const a = createMenuItem(sendBitCloutId, 'fa-hand-holding-usd', 'Send $CLOUT')
-    const publicKey = topCard.querySelector('.creator-profile__ellipsis-restriction').innerText.trim()
+    const publicKey = getPublicKeyFromPage()
     a.onclick = () => window.location.href = `send-bitclout?public_key=${publicKey}`
     menu.insertBefore(a, menu.firstElementChild)
   } catch (e) {}
@@ -910,13 +909,16 @@ const enrichProfileFromApi = (profileDetailsDiv) => {
   const loggedInPubKey = getLoggedInPublicKey()
   if (!loggedInPubKey) return
 
+  const pagePubKey = getPublicKeyFromPage()
+  if (!pagePubKey) return
+
   observeProfileDetails(profileDetailsDiv)
 
-  getFollowingByUsername(pageUsername).then(followingRes => {
+  isFollowingPublicKey(pagePubKey, loggedInPubKey).then(followingRes => {
     const userDataDiv = getProfileUserDataDiv()
     if (!userDataDiv) return Promise.reject()
 
-    addFollowsYouBadgeToProfileHeader(userDataDiv, followingRes['PublicKeyToProfileEntry'])
+    addFollowsYouBadgeToProfileHeader(userDataDiv, followingRes['IsFollowing'])
 
     if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
@@ -937,13 +939,13 @@ const enrichProfileFromApi = (profileDetailsDiv) => {
   }).then(pagePubKey => {
     if (!pagePubKey) return Promise.reject()
 
-    return getHodlersByPublicKey(loggedInPubKey).then(hodlersList => {
+    return isHoldingPublicKey(pagePubKey, loggedInPubKey).then(res => {
       if (getUsernameFromUrl() !== pageUsername) return Promise.reject()
 
       const userDataDiv = getProfileUserDataDiv()
       if (!userDataDiv) return Promise.reject()
 
-      addHodlerBadgeToProfileHeader(userDataDiv, hodlersList, pagePubKey)
+      addHodlerBadgeToProfileHeader(userDataDiv, res['IsHodling'], res['BalanceEntry'])
     })
   }).then(() => getHodlersByUsername(pageUsername)).then(hodlersList => {
     addHoldersCount(hodlersList.length)
