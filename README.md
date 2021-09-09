@@ -1,5 +1,10 @@
 # BitClout Plus
+
+[![Web Store Release](https://github.com/iPaulPro/BitCloutPlus/actions/workflows/release.yml/badge.svg)](https://github.com/iPaulPro/BitCloutPlus/actions/workflows/release.yml)
+
 Chrome / Brave extension to enhance bitclout.com pages
+
+<a href="https://get.bitclout.plus"><img src="https://storage.googleapis.com/chrome-gcs-uploader.appspot.com/image/WlD8wC6g8khYWPJUsQceQkhXSlv1/UV4C4ybeBTsZt43U4xis.png"></a>
 
 ## Introduction
 
@@ -7,7 +12,7 @@ Details can be found at [bitclout.plus](https://bitclout.plus)
 
 ## Installation
 
-Until BitClout Plus is available on the Chrome Web Store, you may install manually.
+Install from the [Chrome Web Store](https://get.bitclout.plus), or you may install manually:
 
 #### Step 1
 
@@ -25,5 +30,3 @@ Click "Load unpacked" and select the unzipped project directory.
 ## Credits
 
 Created by [paulburke](https://bitclout.com/u/paulburke)
-
-Dark mode CSS by [chapel](https://bitclout.com/u/lepahc)
