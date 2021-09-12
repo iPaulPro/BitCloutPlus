@@ -1,0 +1,32 @@
+name: Web Store Release
+
+on:
+  push:
+    tags:  
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+        
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Create Zip
+        run: zip -r release.zip . -x ".git/*" ".github/*" ".gitignore" "README.md"
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "release.zip"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Publish to Web Store
+        uses: trmcnvn/chrome-addon@v2
+        with:
+          extension: ${{ secrets.GOOGLE_EXTENSION_ID }}
+          zip: release.zip
+          client-id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          client-secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
