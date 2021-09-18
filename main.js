@@ -50,6 +50,12 @@ const getUsernameFromUrl = function () {
   return undefined
 }
 
+const getPostHashHexFromUrl = function () {
+  const segments = new URL(document.location).pathname.split('/')
+  if (segments[1] === 'post' || segments[1] === 'nft') return segments[2]
+  return undefined
+}
+
 const getLoggedInPublicKey = function () {
   const key = window.localStorage.getItem('lastLoggedInUser')
   if (!key) return undefined
@@ -867,6 +873,12 @@ const appRootObserverCallback = function () {
   const profilePage = document.querySelector('creator-profile-page')
   if (profilePage) {
     enrichProfile()
+    return
+  }
+
+  const nftPostPage = document.querySelector('nft-post-page')
+  if (nftPostPage) {
+    enrichNftPostPage(nftPostPage)
   }
 }
 
@@ -1035,6 +1047,11 @@ const globalContainerObserverCallback = function () {
   const following = document.querySelector('manage-follows')
   if (following) {
     observeFollowingList(following)
+    return
+  }
+
+  if (isBurnNftUrl()) {
+    createBurnNftPage()
   }
 }
 
@@ -1061,7 +1078,13 @@ const onTransactionSigned = (payload) => {
     if (response && response['PostHashHex']) {
       window.location.href = `posts/${response['PostHashHex']}`
     } else {
-      window.location.href = `u/${getLoggedInUsername()}`
+      const metadata = res['Transaction']['TxnMeta']
+      const nftPostHash = metadata['NFTPostHash']
+      if (nftPostHash) {
+        window.location.href = window.location.href.slice(0, window.location.href.lastIndexOf('/'))
+      } else {
+        window.location.href = window`u/${getLoggedInUsername()}`
+      }
     }
   }).catch(() => {})
 }
@@ -1081,7 +1104,7 @@ const handleSignTransactionResponse = (payload) => {
   if (!payload) return
 
   if (payload['approvalRequired'] && pendingTransactionHex) {
-    const hostname = (window.location.hostname === 'love4src.com') ? 'identity.love4src.come' : 'identity.bitclout.com'
+    const hostname = (window.location.hostname === 'love4src.com') ? 'identity.love4src.com' : 'identity.bitclout.com'
     identityWindow = window.open(
       `https://${hostname}/approve?tx=${pendingTransactionHex}`, null,
       'toolbar=no, width=800, height=1000, top=0, left=0')
@@ -1092,7 +1115,7 @@ const handleSignTransactionResponse = (payload) => {
 
 const handleMessage = (message) => {
   const { data: { id: id, method: method, payload: payload } } = message
-
+  console.log(`handleMessage: pendingSignTransactionId = ${pendingSignTransactionId}, id = ${JSON.stringify(id)}, method = ${method}, payload = ${JSON.stringify(payload)}`)
  if (method === 'login') {
     handleLogin(payload)
   } else if (id === pendingSignTransactionId) {
