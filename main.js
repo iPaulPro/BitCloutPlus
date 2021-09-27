@@ -4,7 +4,7 @@
  Distributed under the MIT License (license terms are at http://opensource.org/licenses/MIT).
  */
 
-const nanosInBitClout = 1000000000
+const deSoInNanos = 1000000000
 const maxPostLength = 2000
 const postButtonClass = 'plus-btn-submit-post'
 
@@ -82,7 +82,7 @@ const addNativeCoinPriceToProfileHeader = (userDataDiv, profile) => {
   const priceDiv = priceContainerDiv.firstElementChild
 
   const coinPriceNanos = profile['CoinPriceBitCloutNanos']
-  const nativePrice = (coinPriceNanos / nanosInBitClout).toFixed(2)
+  const nativePrice = (coinPriceNanos / deSoInNanos).toFixed(2)
 
   const tooltipAttr = document.createAttribute('data-bs-toggle')
   tooltipAttr.value = 'tooltip'
@@ -91,7 +91,7 @@ const addNativeCoinPriceToProfileHeader = (userDataDiv, profile) => {
   span.id = nativePriceId
   span.className = 'plus-text-muted mr-2 fs-14px'
   span.style.fontWeight = '500'
-  span.innerText = `(${nativePrice} $CLOUT)`
+  span.innerText = `(${nativePrice} $DESO)`
   span.setAttributeNode(tooltipAttr)
 
   priceDiv.insertBefore(span, priceDiv.lastChild)
@@ -296,7 +296,7 @@ const addHodlerBadgeToProfileHeader = function (userDataDiv, isHolding, balanceE
   const usernameDiv = userDataDiv.firstElementChild
   if (!usernameDiv) return
 
-  const holding = balanceEntry['BalanceNanos'] / nanosInBitClout
+  const holding = balanceEntry['BalanceNanos'] / deSoInNanos
   const holdsOrPurchased = balanceEntry['HasPurchased'] ? 'Purchased' : 'Gifted'
   const formattedHoldings = parseFloat(holding.toFixed(6))
   if (formattedHoldings === 0) return
@@ -391,15 +391,15 @@ const getPublicKeyFromPage = () => {
   return topCard.querySelector('.creator-profile__ellipsis-restriction').innerText.trim()
 }
 
-const addSendBitCloutMenuItem = function (menu) {
+const addSendDeSoMenuItem = function (menu) {
   if (!menu) return
 
-  let sendBitCloutId = 'plus-profile-menu-send-bitclout'
-  if (document.getElementById(sendBitCloutId)) return
+  let sendDeSoId = 'plus-profile-menu-send-deso'
+  if (document.getElementById(sendDeSoId)) return
 
 
   try {
-    const a = createMenuItem(sendBitCloutId, 'fa-hand-holding-usd', 'Send $CLOUT')
+    const a = createMenuItem(sendDeSoId, 'fa-hand-holding-usd', 'Send $DESO')
     const publicKey = getPublicKeyFromPage()
     a.onclick = () => window.location.href = `send-bitclout?public_key=${publicKey}`
     menu.insertBefore(a, menu.firstElementChild)
@@ -464,7 +464,7 @@ const enrichProfile = function () {
   if (!profileDetails) return
 
   const profileMenu = getProfileMenu()
-  addSendBitCloutMenuItem(profileMenu)
+  addSendDeSoMenuItem(profileMenu)
   addInsightsMenuItem(profileMenu)
   addWalletMenuItem(profileMenu)
   addHistoryMenuItem(profileMenu)
@@ -482,7 +482,7 @@ const enrichWallet = function (page) {
 
     const cloutLabelSpan = document.createElement('span')
     cloutLabelSpan.className = 'plus-text-muted fs-12px font-weight-normal ml-2'
-    cloutLabelSpan.innerText = '$CLOUT'
+    cloutLabelSpan.innerText = '$DESO'
 
     const cloutSpan = document.createElement('span')
     cloutSpan.className = 'plus-text-muted fs-14px font-weight-normal'
@@ -507,7 +507,7 @@ const enrichBalanceBox = function (profile) {
   if (!profile) return
 
   try {
-    const nativePrice = (profile['CoinPriceBitCloutNanos'] / nanosInBitClout).toFixed(2)
+    const nativePrice = (profile['CoinPriceBitCloutNanos'] / deSoInNanos).toFixed(2)
     const spotPrice = getSpotPrice()
     const coinPriceUsd = nativePrice * spotPrice
 
@@ -516,7 +516,7 @@ const enrichBalanceBox = function (profile) {
     const creatorCoinPriceUsdId = 'plus-creator-coin-price-usd'
     const existingElement = document.getElementById(creatorCoinBalanceId)
     if (existingElement) {
-      document.getElementById(creatorCoinPriceId).innerText = ` ${nativePrice} $CLOUT `
+      document.getElementById(creatorCoinPriceId).innerText = ` ${nativePrice} $DESO `
       document.getElementById(creatorCoinPriceUsdId).innerText = formatPriceUsd(coinPriceUsd)
       return
     }
@@ -538,7 +538,7 @@ const enrichBalanceBox = function (profile) {
 
     const coinPriceValueDiv = document.createElement('div')
     coinPriceValueDiv.id = creatorCoinPriceId
-    coinPriceValueDiv.innerText = ` ${nativePrice} $CLOUT `
+    coinPriceValueDiv.innerText = ` ${nativePrice} $DESO `
 
     const coinPriceConversionDiv = document.createElement('div')
     coinPriceConversionDiv.className = 'd-flex plus-text-muted'
@@ -590,7 +590,7 @@ const addGlobalEnrichments = function () {
 
 function buildTributeUsernameMenuTemplate (item) {
   const spotPrice = getSpotPrice()
-  const bitcloutPrice = item.original['CoinPriceBitCloutNanos'] / nanosInBitClout
+  const bitcloutPrice = item.original['CoinPriceBitCloutNanos'] / deSoInNanos
 
   const priceDiv = document.createElement('div')
   priceDiv.className = 'plus-text-muted fs-12px'
@@ -962,7 +962,7 @@ const enrichProfileFromApi = (profileDetailsDiv) => {
 
     addNativeCoinPriceToProfileHeader(userDataDiv, pageProfile)
 
-    const circulation = pageProfile['CoinEntry']['CoinsInCirculationNanos'] / nanosInBitClout
+    const circulation = pageProfile['CoinEntry']['CoinsInCirculationNanos'] / deSoInNanos
     addHolderEnrichments(circulation)
 
     const pubKey = pageProfile['PublicKeyBase58Check']
