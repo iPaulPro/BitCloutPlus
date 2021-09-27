@@ -4,6 +4,16 @@ bs-dropdown-container .dropdown-menu {
     min-width: 12rem !important;
 }
 
+/* Hide scrollbar for Chrome, Safari and Opera */
+.global__nav__inner::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.global__nav__inner {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
 /* Vendor overrides */
 
 .tribute-container {

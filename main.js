@@ -45,13 +45,13 @@ const getLoggedInUsername = function () {
 }
 
 const getUsernameFromUrl = function () {
-  const segments = new URL(document.location).pathname.split('/')
+  const segments = new URL(window.location).pathname.split('/')
   if (segments[1] === 'u') return segments[2]
   return undefined
 }
 
 const getPostHashHexFromUrl = function () {
-  const segments = new URL(document.location).pathname.split('/')
+  const segments = new URL(window.location).pathname.split('/')
   if (segments[1] === 'post' || segments[1] === 'nft') return segments[2]
   return undefined
 }
@@ -563,9 +563,29 @@ const enrichBalanceBox = function (profile) {
   } catch (e) { }
 }
 
+const checkForNftTransfers = () => {
+  const publicKey = getLoggedInPublicKey()
+  if (!publicKey) return
+
+  getPendingNftTransfers(publicKey).then(pendingNfts => {
+    if (pendingNfts.length === 0) return
+
+    const menuItem = document.getElementById('plus-nft-transfers-left-bar-button')
+    if (!menuItem) return
+
+    const count = document.createElement('div')
+    count.className = 'ml-5px p-5x fs-15px notification'
+    count.innerText = String(pendingNfts.length)
+
+    const div = menuItem.firstElementChild.lastElementChild
+    div.appendChild(count)
+  })
+}
+
 const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
+  addNftTransfersMenuItem()
 }
 
 function buildTributeUsernameMenuTemplate (item) {
@@ -1052,6 +1072,16 @@ const globalContainerObserverCallback = function () {
 
   if (isBurnNftUrl()) {
     createBurnNftPage()
+    return
+  }
+
+  if (isNftTransfersUrl()) {
+    createNftTransfersPage()
+    return
+  }
+
+  if (isTransferNftUrl()) {
+    createTransferNftPage()
   }
 }
 
@@ -1081,7 +1111,12 @@ const onTransactionSigned = (payload) => {
       const metadata = res['Transaction']['TxnMeta']
       const nftPostHash = metadata['NFTPostHash']
       if (nftPostHash) {
-        window.location.href = window.location.href.slice(0, window.location.href.lastIndexOf('/'))
+        if (new URL(window.location).pathname.includes('nft-transfers')) {
+          window.location.reload(false)
+        } else {
+          const postHashHex = Buffer.from(nftPostHash).toString('hex')
+          window.location.href = `/nft/${postHashHex}`
+        }
       } else {
         window.location.href = window`u/${getLoggedInUsername()}`
       }
@@ -1115,7 +1150,6 @@ const handleSignTransactionResponse = (payload) => {
 
 const handleMessage = (message) => {
   const { data: { id: id, method: method, payload: payload } } = message
-  console.log(`handleMessage: pendingSignTransactionId = ${pendingSignTransactionId}, id = ${JSON.stringify(id)}, method = ${method}, payload = ${JSON.stringify(payload)}`)
  if (method === 'login') {
     handleLogin(payload)
   } else if (id === pendingSignTransactionId) {
