@@ -28,6 +28,7 @@
         "vendor/underscore/underscore-umd-min.js",
         "vendor/superscore/superscore.min.js",
         "vendor/buffer/buffer.min.js",
+        "vendor/sweetalert2/sweetalert2.all.min.js",
         "lib/embed.js",
         "lib/api.js",
         "lib/nft.js",
