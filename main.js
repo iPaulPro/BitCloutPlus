@@ -573,12 +573,19 @@ const checkForNftTransfers = () => {
     const menuItem = document.getElementById('plus-nft-transfers-left-bar-button')
     if (!menuItem) return
 
-    const count = document.createElement('div')
-    count.className = 'ml-5px p-5x fs-15px notification'
-    count.innerText = String(pendingNfts.length)
-
-    const div = menuItem.firstElementChild.lastElementChild
-    div.appendChild(count)
+    const id = 'plus-nft-transfer-count'
+    let countElement
+    const existingCountElement = document.getElementById(id)
+    if (existingCountElement) {
+      countElement = existingCountElement
+    } else {
+      countElement = document.createElement('div')
+      countElement.id = id
+      countElement.className = 'ml-5px p-5x fs-15px notification'
+      const div = menuItem.firstElementChild.lastElementChild
+      div.appendChild(countElement)
+    }
+    countElement.innerText = String(pendingNfts.length)
   })
 }
 
@@ -651,6 +658,18 @@ const addPostUsernameAutocomplete = function () {
   }
 }
 
+const postIdentityMessage = (id, method, payload) => {
+  const identityFrame = document.getElementById('identity')
+  if (!identityFrame) throw 'No identity frame found'
+
+  identityFrame.contentWindow.postMessage({
+    id: id,
+    service: 'identity',
+    method: method,
+    payload: payload
+  }, '*')
+}
+
 const sendSignTransactionMsg = (identity, transactionHex, id) => {
   const payload = {
     transactionHex: transactionHex
@@ -665,15 +684,7 @@ const sendSignTransactionMsg = (identity, transactionHex, id) => {
   pendingSignTransactionId = id
   pendingTransactionHex = transactionHex
 
-  const identityFrame = document.getElementById('identity')
-  if (!identityFrame) throw 'No identity frame found'
-
-  identityFrame.contentWindow.postMessage({
-    id: id,
-    service: 'identity',
-    method: 'sign',
-    payload: payload
-  }, '*')
+  postIdentityMessage(id, 'sign', payload)
 }
 
 const restorePostDraft = () => {
@@ -1139,9 +1150,9 @@ const handleSignTransactionResponse = (payload) => {
   if (!payload) return
 
   if (payload['approvalRequired'] && pendingTransactionHex) {
-    const hostname = (window.location.hostname === 'love4src.com') ? 'identity.love4src.com' : 'identity.bitclout.com'
+    const identityServiceUrl = window.localStorage.getItem('lastIdentityServiceURL')
     identityWindow = window.open(
-      `https://${hostname}/approve?tx=${pendingTransactionHex}`, null,
+      `${identityServiceUrl}/approve?tx=${pendingTransactionHex}`, null,
       'toolbar=no, width=800, height=1000, top=0, left=0')
   } else if (payload['signedTransactionHex']) {
     onTransactionSigned(payload)
@@ -1152,9 +1163,18 @@ const handleMessage = (message) => {
   const { data: { id: id, method: method, payload: payload } } = message
  if (method === 'login') {
     handleLogin(payload)
-  } else if (id === pendingSignTransactionId) {
-    handleSignTransactionResponse(payload)
-  }
+ } else if (id === pendingSignTransactionId && payload) {
+   if (payload['encryptedMessage']) {
+     const encryptedMessage = payload['encryptedMessage']
+     if (encryptedMessage) onNftTransferUnlockableEncrypted(encryptedMessage)
+   } else if (payload['decryptedHexes']) {
+     const unlockableText = Object.values(payload['decryptedHexes'])[0]
+     if (unlockableText) onNftTransferUnlockableDecrypted(unlockableText)
+   } else {
+     handleSignTransactionResponse(payload)
+   }
+ }
+ pendingSignTransactionId = null
 }
 
 const init = function () {
