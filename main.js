@@ -796,11 +796,13 @@ const onPostButtonClick = (postButton) => {
   const hasImage = postImage && postImage.src && postImage.src.includes(`images.${window.location.hostname}`)
   const image = hasImage ? postImage.src : undefined
 
-  const postVideo = container.querySelector('input[type="url"]')
-  const videoUrl = postVideo ? postVideo.value : undefined
+  const postEmbed = container.querySelector('input[type="url"]')
+  const embedUrl = postEmbed ? postEmbed.value : undefined
+
+  const video = container.querySelector('.feed-post__video-container')?.firstElementChild?.src
 
   const pubKey = getLoggedInPublicKey()
-  submitPost(pubKey, postBody, image, videoUrl).then(transactionHex => {
+  submitPost(pubKey, postBody, image, video, embedUrl).then(transactionHex => {
     if (!transactionHex) {
       return Promise.reject('Error creating submit-post transaction')
     }
