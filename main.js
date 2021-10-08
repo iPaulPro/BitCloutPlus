@@ -1064,6 +1064,7 @@ const globalContainerObserverCallback = function () {
   addPostUsernameAutocomplete()
   addPostTextAreaListener()
   restorePostDraft()
+  replacePostBtn()
 
   const profilePage = document.querySelector('creator-profile-page')
   if (profilePage) {
@@ -1104,8 +1105,6 @@ const bodyObserverCallback = function () {
     addPostUsernameAutocomplete()
     fixImageLightbox(modalContainer)
   }
-
-  replacePostBtn()
 }
 
 const onTransactionSigned = (payload) => {
