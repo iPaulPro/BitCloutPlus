@@ -81,7 +81,7 @@ const addNativeCoinPriceToProfileHeader = (userDataDiv, profile) => {
 
   const priceDiv = priceContainerDiv.firstElementChild
 
-  const coinPriceNanos = profile['CoinPriceBitCloutNanos']
+  const coinPriceNanos = profile['CoinPriceDeSoNanos']
   const nativePrice = (coinPriceNanos / deSoInNanos).toFixed(2)
 
   const tooltipAttr = document.createAttribute('data-bs-toggle')
@@ -507,7 +507,7 @@ const enrichBalanceBox = function (profile) {
   if (!profile) return
 
   try {
-    const nativePrice = (profile['CoinPriceBitCloutNanos'] / deSoInNanos).toFixed(2)
+    const nativePrice = (profile['CoinPriceDeSoNanos'] / deSoInNanos).toFixed(2)
     const spotPrice = getSpotPrice()
     const coinPriceUsd = nativePrice * spotPrice
 
