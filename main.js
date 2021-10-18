@@ -689,6 +689,69 @@ const observeProfileDetails = (profileDetailsDiv) => {
   profileTabsObserver.observe(profileDetailsDiv, observerConfig)
 }
 
+const activeIndicatorId = 'plus_active-indicator'
+
+const createActiveIndicatorElement = (tooltip) => {
+  const activeIndicator = document.createElement('div')
+  activeIndicator.id = activeIndicatorId
+  activeIndicator.className = 'plus-active-indicator rounded-circle bg-success m-1'
+
+  const container = document.createElement('div')
+  container.className = 'plus-active-indicator-container cursor-pointer plus-tooltip'
+  container.appendChild(activeIndicator)
+  container.appendChild(tooltip)
+
+  return container
+}
+
+const createActiveIndicatorTooltip = (innerText) => {
+  const tooltip = document.createElement('span')
+  tooltip.className = 'plus-tooltip-text fs-12px'
+  tooltip.style.width = '180px'
+  tooltip.style.left = '26px'
+  tooltip.style.top = '10px'
+  tooltip.innerText = innerText
+  return tooltip
+}
+
+const showIndicatorIfActive = (publicKey, profileDetailsDiv) => getTransactionInfo(publicKey, -1, 100)
+  .then((transactions) => {
+    const latestTransaction = transactions.reverse()
+      .find(transaction => transaction['TransactionMetadata']['TransactorPublicKeyBase58Check'] === publicKey)
+
+    if (!latestTransaction) return
+
+    if (document.getElementById(activeIndicatorId)) return
+
+    const blockHashHex = latestTransaction['BlockHashHex']
+    getBlock(blockHashHex).then((res) => {
+      const header = res['Header']
+      const error = res['Error']
+      let tooltipText
+
+      // This means the transaction is still in the mempool, which means active within the past 5 min
+      if (error && error.includes('Key not found')) {
+        tooltipText = `Last active < 5 minutes ago`
+      } else {
+        const now = Date.now()
+        const timestamp = header['TstampSecs'] * 1000
+        const recentlyActive = now - timestamp < (1000 * 60 * 15)
+        if (recentlyActive) {
+          // Block times are ~5 min, so we add that to account for time passed before the transaction was mined
+          const timeAgo = Math.round((now - timestamp) / 1000 / 60) + 5
+          tooltipText = `Last active ~${timeAgo} minutes ago`
+        }
+      }
+
+      if (tooltipText) {
+        const tooltip = createActiveIndicatorTooltip(tooltipText)
+        const activeIndicator = createActiveIndicatorElement(tooltip)
+        const avatar = profileDetailsDiv.querySelector('.creator-profile__avatar')
+        avatar.appendChild(activeIndicator)
+      }
+    })
+  })
+
 const enrichProfileFromApi = (profileDetailsDiv) => {
   const pageUsername = getUsernameFromUrl()
   if (!pageUsername) return
@@ -741,7 +804,8 @@ const enrichProfileFromApi = (profileDetailsDiv) => {
       return hodler['HODLerPublicKeyBase58Check'] === loggedInPubKey
     })
     if (loggedInUserIsHodler) addSellButton()
-  }).catch(() => {})
+  }).then(() => showIndicatorIfActive(pagePubKey, profileDetailsDiv))
+    .catch(() => {})
 }
 
 const observeProfileInnerContent = (page) => {
@@ -960,7 +1024,7 @@ const init = function () {
   }
 
   if (timer) clearInterval(timer)
-  timer = setInterval(updateUserCreatorCoinPrice, 60 * 1000)
+  timer = setInterval(updateUserCreatorCoinPrice, 5 * 60 * 1000)
 }
 
 init()

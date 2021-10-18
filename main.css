@@ -134,3 +134,23 @@ bs-dropdown-container .dropdown-menu {
 .plus-tooltip:hover .plus-tooltip-text {
     visibility: visible;
 }
+
+.plus-active-indicator-container {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    background-color: white;
+    border-radius: 50% 0 0 0;
+    height: 16px;
+    width: 16px;
+    display: grid;
+    padding: 1px 1px;
+    place-items: center;
+    box-shadow: -1px -1px 0.15rem #40000000;
+}
+
+.plus-active-indicator {
+    width: 10px;
+    height: 10px;
+    clip-path: circle(50%);
+}
