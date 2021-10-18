@@ -34,6 +34,7 @@
         "lib/api.js",
         "lib/nft.js",
         "lib/post.js",
+        "lib/profile.js",
         "main.js"
       ],
       "css": [
