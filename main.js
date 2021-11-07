@@ -242,6 +242,13 @@ const sendSignTransactionMsg = (identity, transactionHex, id) => {
   postIdentityMessage(id, 'sign', payload)
 }
 
+const removeUnfollowLinksInPosts = () => {
+  const followButtons = document.querySelectorAll('feed-post follow-button')
+  Array.from(followButtons).forEach(node => {
+    if (node.innerText === 'Unfollow') node.remove()
+  })
+}
+
 // Callback function to execute when body mutations are observed
 const appRootObserverCallback = function () {
   if (currentUrl !== window.location.href) {
@@ -250,6 +257,7 @@ const appRootObserverCallback = function () {
   }
 
   addGlobalEnrichments()
+  removeUnfollowLinksInPosts()
 
   const profilePage = document.querySelector('creator-profile-page')
   if (profilePage) {
