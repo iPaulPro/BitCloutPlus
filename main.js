@@ -18,53 +18,6 @@ const dollarFormatter = new Intl.NumberFormat('en-US', {
   currency: 'USD'
 })
 
-const getSpotPrice = function () {
-  const balanceBox = document.getElementsByClassName('right-bar-creators__balance-box').item(0)
-
-  try {
-    const priceContainerDiv = balanceBox.firstElementChild
-    const priceDiv = priceContainerDiv.children.item(1).firstElementChild
-    return parseFloat(priceDiv.innerText.replace(/[^0-9.]+/g, ''))
-  } catch (e) {}
-
-  return 0
-}
-
-const getLoggedInUsername = function () {
-  const elementList = document.getElementsByClassName('change-account-selector__acount-name')
-
-  try {
-    const changeAccountSelector = elementList.item(0)
-    return changeAccountSelector.innerText.trim()
-  } catch (e) {}
-
-  return ''
-}
-
-const getUsernameFromUrl = function () {
-  const segments = new URL(window.location).pathname.split('/')
-  if (segments[1] === 'u') return segments[2]
-  return undefined
-}
-
-const getLoggedInPublicKey = function () {
-  const key = window.localStorage.getItem('lastLoggedInUser')
-  if (!key) return undefined
-
-  return JSON.parse(key)
-}
-
-const getPublicKeyFromPage = () => {
-  const topCard = document.querySelector('creator-profile-top-card')
-  if (!topCard) return
-
-  return topCard.querySelector('.creator-profile__ellipsis-restriction').innerText.trim()
-}
-
-const openInNewTab = url => {
-  window.open(url, '_blank').focus()
-}
-
 const addEditProfileButton = function () {
   let editProfileButtonId = 'plus-sidebar-edit-profile'
   if (document.getElementById(editProfileButtonId)) return
@@ -211,35 +164,6 @@ const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
   addNftTransfersMenuItem()
-}
-
-const postIdentityMessage = (id, method, payload) => {
-  const identityFrame = document.getElementById('identity')
-  if (!identityFrame) throw 'No identity frame found'
-
-  identityFrame.contentWindow.postMessage({
-    id: id,
-    service: 'identity',
-    method: method,
-    payload: payload
-  }, '*')
-}
-
-const sendSignTransactionMsg = (identity, transactionHex, id) => {
-  const payload = {
-    transactionHex: transactionHex
-  }
-
-  if (identity) {
-    payload.accessLevel = identity.accessLevel
-    payload.accessLevelHmac = identity.accessLevelHmac
-    payload.encryptedSeedHex = identity.encryptedSeedHex
-  }
-
-  pendingSignTransactionId = id
-  pendingTransactionHex = transactionHex
-
-  postIdentityMessage(id, 'sign', payload)
 }
 
 const removeUnfollowLinksInPosts = () => {

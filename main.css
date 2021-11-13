@@ -154,3 +154,8 @@ bs-dropdown-container .dropdown-menu {
     height: 10px;
     clip-path: circle(50%);
 }
+
+.__clout-mask-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
