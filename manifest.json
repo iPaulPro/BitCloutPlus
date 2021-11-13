@@ -21,7 +21,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://bitclout.com/*"
+        "https://bitclout.com/*",
+        "https://node.deso.org/*"
       ],
       "js": [
         "vendor/tribute/tribute.min.js",
