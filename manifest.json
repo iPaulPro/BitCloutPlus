@@ -1,7 +1,7 @@
 {
   "name": "BitClout Plus",
   "description": "BitClout on steroids",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "manifest_version": 3,
   "content_security_policy": {
     "extension_pages": "default-src 'self'; frame-ancestors 'none';"
