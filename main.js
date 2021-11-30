@@ -7,7 +7,7 @@
 const deSoInNanos = 1000000000
 
 let timer, currentUrl
-let identityWindow, identityUsers
+let identityWindow
 let pendingSignTransactionId, pendingTransactionHex
 
 let longPostEnabled = true
