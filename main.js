@@ -342,7 +342,7 @@ const handleSignTransactionResponse = (payload) => {
   if (!payload) return
 
   if (payload['approvalRequired'] && pendingTransactionHex) {
-    const identityServiceUrl = window.localStorage.getItem('lastIdentityServiceURL')
+    const identityServiceUrl = window.localStorage.getItem('lastIdentityServiceURLV2')
     identityWindow = window.open(
       `${identityServiceUrl}/approve?tx=${pendingTransactionHex}`, null,
       'toolbar=no, width=800, height=1000, top=0, left=0')
