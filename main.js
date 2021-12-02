@@ -8,7 +8,7 @@ const deSoInNanos = 1000000000
 
 let timer, currentUrl
 let identityWindow
-let pendingSignTransactionId, pendingTransactionHex
+let pendingIdentityMessageId, pendingTransactionHex
 
 let longPostEnabled = true
 let observingHolders = false
@@ -160,6 +160,70 @@ const checkForNftTransfers = () => {
   })
 }
 
+const checkForNotifications = () => {
+  const publicKey = getLoggedInPublicKey()
+  if (!publicKey) return
+
+  const leftBarButtons = document.querySelectorAll('left-bar-button')
+  if (!leftBarButtons || leftBarButtons.length === 0) return
+
+  const sidebar = leftBarButtons[0].parentElement
+
+  const dividers = sidebar.querySelectorAll('.p-15px')
+  if (!dividers) return
+
+  const notificationsAnchor = sidebar.querySelector("a[href*='/notifications']")
+  if (!notificationsAnchor) return
+
+  const menuItem = notificationsAnchor.parentElement.parentElement
+  if (menuItem.tagName !== 'LEFT-BAR-BUTTON') return
+
+  getUnreadNotificationsCount(publicKey)
+    .then(data => {
+      const notificationsCount = data['NotificationsCount']
+      const id = 'plus-notifications-count'
+      if (notificationsCount > 0) {
+        let countElement
+        const existingCountElement = document.getElementById(id)
+        if (existingCountElement) {
+          countElement = existingCountElement
+        } else {
+          countElement = document.createElement('div')
+          countElement.id = id
+          countElement.className = 'ml-5px p-5x fs-15px notification'
+          const div = menuItem.firstElementChild.lastElementChild
+          div.appendChild(countElement)
+        }
+        countElement.innerText = String(notificationsCount)
+      } else {
+        const countElement = document.getElementById(id)
+        if (countElement) countElement.remove()
+      }
+    })
+}
+
+const markNotificationsRead = (jwt) => {
+  const publicKey = getLoggedInPublicKey()
+  if (!publicKey) return
+
+  getUnreadNotificationsCount(publicKey)
+    .then(data => {
+      const index = data['LastUnreadNotificationIndex']
+      const metadata = {
+        PublicKeyBase58Check: publicKey,
+        LastSeenIndex: index,
+        LastUnreadNotificationIndex: index,
+        UnreadNotifications: 0,
+        JWT: jwt
+      }
+      return setNotificationMetadata(metadata)
+    })
+    .then(() => {
+      const countElement = document.getElementById('plus-notifications-count')
+      if (countElement) countElement.remove()
+    })
+}
+
 const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
@@ -244,12 +308,30 @@ const observeFollowingList = (page) => {
   })
 }
 
+const getJwt = () => {
+  const identity = getCurrentIdentity()
+  if (!identity) return
+
+  pendingIdentityMessageId = _.UUID.v4()
+
+  const payload = {
+    accessLevel: identity.accessLevel,
+    accessLevelHmac: identity.accessLevelHmac,
+    encryptedSeedHex: identity.encryptedSeedHex
+  }
+  
+  postIdentityMessage(pendingIdentityMessageId, 'jwt', payload)
+}
+
 const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
   addPostUsernameAutocomplete()
   addPostTextAreaListener()
   restorePostDraft()
   replacePostBtn()
+
+  const notifications = document.querySelector('app-notifications-page')
+  if (!notifications) checkForNotifications()
 
   const profilePage = document.querySelector('creator-profile-page')
   if (profilePage) {
@@ -353,20 +435,23 @@ const handleSignTransactionResponse = (payload) => {
 
 const handleMessage = (message) => {
   const { data: { id: id, method: method, payload: payload } } = message
- if (method === 'login') {
-    handleLogin(payload)
- } else if (id === pendingSignTransactionId && payload) {
+
+  if (method === 'login') {
+   handleLogin(payload)
+ } else if (id === pendingIdentityMessageId && payload) {
    if (payload['encryptedMessage']) {
      const encryptedMessage = payload['encryptedMessage']
      if (encryptedMessage) onNftTransferUnlockableEncrypted(encryptedMessage)
    } else if (payload['decryptedHexes']) {
      const unlockableText = Object.values(payload['decryptedHexes'])[0]
      if (unlockableText) onNftTransferUnlockableDecrypted(unlockableText)
+   } else if (payload['jwt']) {
+     markNotificationsRead(payload['jwt'])
    } else {
      handleSignTransactionResponse(payload)
    }
- }
- pendingSignTransactionId = null
+    pendingIdentityMessageId = null
+  }
 }
 
 const init = function () {
