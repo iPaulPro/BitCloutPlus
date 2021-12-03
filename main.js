@@ -331,7 +331,11 @@ const globalContainerObserverCallback = function () {
   replacePostBtn()
 
   const notifications = document.querySelector('app-notifications-page')
-  if (!notifications) checkForNotifications()
+  if (!notifications) {
+    checkForNotifications()
+  } else {
+    getJwt()
+  }
 
   const profilePage = document.querySelector('creator-profile-page')
   if (profilePage) {
