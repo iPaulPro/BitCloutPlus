@@ -256,6 +256,12 @@ const appRootObserverCallback = function () {
   const nftPostPage = document.querySelector('nft-post-page')
   if (nftPostPage) {
     enrichNftPostPage(nftPostPage)
+    return
+  }
+
+  const postThreadPage = document.querySelector('post-thread-page')
+  if (postThreadPage) {
+    showEditPostButtonIfNeeded()
   }
 }
 
@@ -373,6 +379,7 @@ const globalContainerObserverCallback = function () {
   const newPost = document.querySelector('app-create-post-page')
   if (newPost) {
     enrichCreatePostPage(newPost)
+    checkForEditPostQueryParams(newPost)
   }
 }
 
