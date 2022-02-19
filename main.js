@@ -8,7 +8,6 @@ const deSoInNanos = 1000000000
 
 let timer, currentUrl
 let identityWindow
-let pendingIdentityMessageId, pendingTransactionHex
 
 let longPostEnabled = true
 let observingHolders = false
@@ -318,7 +317,7 @@ const getJwt = () => {
   const identity = getCurrentIdentity()
   if (!identity) return
 
-  pendingIdentityMessageId = _.UUID.v4()
+  pendingIdentityMessageId = uuid()
 
   const payload = {
     accessLevel: identity.accessLevel,
