@@ -5,12 +5,12 @@ bs-dropdown-container .dropdown-menu {
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
-.global__nav__inner::-webkit-scrollbar {
+.global__nav__inner::-webkit-scrollbar, .global__sidebar__inner::-webkit-scrollbar {
     display: none;
 }
 
 /* Hide scrollbar for IE, Edge and Firefox */
-.global__nav__inner {
+.global__nav__inner, .global__sidebar__inner {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
 }
