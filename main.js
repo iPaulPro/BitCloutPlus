@@ -133,32 +133,6 @@ const enrichBalanceBox = function (profile) {
   } catch (e) { }
 }
 
-const checkForNftTransfers = () => {
-  const publicKey = getLoggedInPublicKey()
-  if (!publicKey) return
-
-  getPendingNftTransfers(publicKey).then(pendingNfts => {
-    if (pendingNfts.length === 0) return
-
-    const menuItem = document.getElementById('plus-nft-transfers-left-bar-button')
-    if (!menuItem) return
-
-    const id = 'plus-nft-transfer-count'
-    let countElement
-    const existingCountElement = document.getElementById(id)
-    if (existingCountElement) {
-      countElement = existingCountElement
-    } else {
-      countElement = document.createElement('div')
-      countElement.id = id
-      countElement.className = 'ml-5px p-5x fs-15px notification'
-      const div = menuItem.firstElementChild.lastElementChild
-      div.appendChild(countElement)
-    }
-    countElement.innerText = String(pendingNfts.length)
-  })
-}
-
 const checkForNotifications = () => {
   const publicKey = getLoggedInPublicKey()
   if (!publicKey) return
@@ -226,7 +200,6 @@ const markNotificationsRead = (jwt) => {
 const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
-  addNftTransfersMenuItem()
 }
 
 const removeUnfollowLinksInPosts = () => {
@@ -357,16 +330,6 @@ const globalContainerObserverCallback = function () {
   const following = document.querySelector('manage-follows')
   if (following) {
     observeFollowingList(following)
-    return
-  }
-
-  if (isBurnNftUrl()) {
-    createBurnNftPage()
-    return
-  }
-
-  if (isNftTransfersUrl()) {
-    createNftTransfersPage()
     return
   }
 
