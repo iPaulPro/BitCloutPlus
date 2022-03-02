@@ -218,6 +218,7 @@ const appRootObserverCallback = function () {
 
   addGlobalEnrichments()
   removeUnfollowLinksInPosts()
+  addLogoutButtons()
 
   const profilePage = document.querySelector('creator-profile-page')
   if (profilePage) {
@@ -301,6 +302,39 @@ const getJwt = () => {
   postIdentityMessage(pendingIdentityMessageId, 'jwt', payload)
 }
 
+const addLogoutButtons = () => {
+  const accountSelectorMaskIconId = '__clout-mask-account-selector-icon'
+  if (document.getElementById(accountSelectorMaskIconId)) return
+
+  if (document.querySelectorAll('.plus-account-logout-icon').length > 0) return
+
+  const listItems = document.querySelectorAll('.change-account-selector_list-item')
+  listItems.forEach(listItem => {
+    const avatar = listItem.querySelector(':scope > .change-account-selector__account-image')
+
+    const icon = document.createElement('i')
+    icon.className = 'plus-account-logout-icon fas fa-times-circle'
+
+    const button = document.createElement('button')
+    button.className = 'btn btn-link py-0 px-1 text-muted'
+    button.onclick = () => {
+      const backgroundImage = avatar.style.backgroundImage
+      const start = backgroundImage.indexOf('BC1YL')
+      const end = backgroundImage.indexOf('?', start)
+      const publicKey = backgroundImage.substring(start, end)
+      identityWindow = window.open(`https://identity.deso.org/logout?publicKey=${publicKey}`, null,
+        'toolbar=no, width=800, height=1000, top=0, left=0')
+    }
+    button.appendChild(icon)
+
+    const div = document.createElement('div')
+    div.className = 'plus-account-logout d-flex flex-row-reverse flex-grow-1'
+    div.appendChild(button)
+
+    listItem.appendChild(div)
+  })
+}
+
 const globalContainerObserverCallback = function () {
   updateUserCreatorCoinPrice()
   addPostUsernameAutocomplete()
@@ -346,6 +380,7 @@ const globalContainerObserverCallback = function () {
 }
 
 const bodyObserverCallback = function () {
+
   const modalContainer = document.querySelector('modal-container')
   if (modalContainer) {
     addPostUsernameAutocomplete()
@@ -390,6 +425,11 @@ const handleLogin = (payload) => {
 
   if (payload['signedTransactionHex']) {
     onTransactionSigned(payload)
+  } else if (payload['users']) {
+    // After logout
+    const users = JSON.stringify(payload['users'])
+    window.localStorage.setItem('identityUsersV2', users)
+    switchToFirstAccount()
   }
 }
 

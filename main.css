@@ -159,3 +159,11 @@ bs-dropdown-container .dropdown-menu {
     opacity: 0.5;
     pointer-events: none;
 }
+
+.change-account-selector_list__inner > .change-account-selector_list-item > .plus-account-logout > .btn > .plus-account-logout-icon {
+    visibility: hidden;
+}
+
+.change-account-selector_list__inner:hover > .change-account-selector_list-item > .plus-account-logout > .btn > .plus-account-logout-icon {
+    visibility: visible;
+}
