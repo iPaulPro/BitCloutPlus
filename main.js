@@ -197,6 +197,108 @@ const markNotificationsRead = (jwt) => {
     })
 }
 
+const extractTransactors = (block) => {
+  const transactors = []
+  const transactions = block['Transactions']
+  transactions.forEach(transaction => {
+    const transactor = transaction['TransactionMetadata']['TransactorPublicKeyBase58Check']
+    transactors.push(transactor)
+  })
+  return transactors
+}
+
+const findFollowingInTransactors = (transactors) => {
+  const publicKey = getLoggedInPublicKey()
+  return getFollowingByPublicKey(publicKey)
+    .then(res => {
+      const followerMap = res['PublicKeyToProfileEntry']
+      return Object.values(followerMap)
+        .filter(follower => transactors.includes(follower['PublicKeyBase58Check']))
+    })
+}
+
+const getOnlineFollowing = () =>
+  getAppState()
+    .then(appState => appState['BlockHeight'])
+    .then(getBlockByHeight)
+    .then(extractTransactors)
+    .then(findFollowingInTransactors)
+
+const addOnlineUsersRightBar = () => {
+  const boxId = 'plus-online-users'
+  if (document.getElementById(boxId)) return
+
+  const rightBar = document.querySelector('right-bar-creators')
+  if (!rightBar) return
+
+  getOnlineFollowing()
+    .then(onlineUsers => {
+      const listItems = []
+      onlineUsers.sort((a, b) => a['Username'].localeCompare(b['Username'])).forEach(user => {
+        const username = user['Username']
+
+        const listItem = document.createElement('a')
+        listItem.className = 'link--unstyled d-flex align-items-center text-grey5 fs-15px py-2'
+        listItem.href = `/u/${username}`
+
+        const avatar = document.createElement('div')
+        avatar.className = 'right-bar-creators-leaderboard__creator-avatar'
+        avatar.style.backgroundImage = `url("https://node.deso.org/api/v0/get-single-profile-picture/${user['PublicKeyBase58Check']}?fallback=https://node.deso.org/assets/img/default_profile_pic.png")`
+
+        const text = document.createElement('span')
+        text.innerText = username
+
+        const textContainer = document.createElement('div')
+        textContainer.className = 'flex-grow-1'
+        textContainer.appendChild(text)
+
+        const messageIcon = document.createElement('i')
+        messageIcon.className = 'fas fa-envelope mr-2'
+
+        const messageLink = document.createElement('a')
+        messageLink.className = 'plus-message-link'
+        messageLink.href = `/inbox?username=${username}`
+        messageLink.appendChild(messageIcon)
+
+        listItem.appendChild(avatar)
+        listItem.appendChild(textContainer)
+        listItem.appendChild(messageLink)
+
+        listItems.push(listItem)
+      })
+
+      const list = document.createElement('div')
+      list.id = 'plus-online-users-list'
+      list.className = 'd-flex flex-column overflow-auto'
+      list.style.maxHeight = '300px'
+
+      if (listItems.length > 0) {
+        listItems.forEach(listItem => list.appendChild(listItem))
+      } else {
+        const emptyItem = document.createElement('div')
+        emptyItem.className = 'text-muted'
+        emptyItem.innerText = '(No users found)'
+        list.appendChild(emptyItem)
+      }
+
+      const title = document.createElement('p')
+      title.className = 'font-weight-bold fs-15px text-white mb-2'
+      title.innerText = `Recently Active (${onlineUsers.length})`
+
+      const box = document.createElement('div')
+      box.id = boxId
+      box.className = 'right-bar-creators__balance-box br-12px p-15px mb-30px fs-13px text-grey5'
+      box.appendChild(title)
+      box.append(list)
+
+      const sidebarInner = rightBar.querySelector(':scope > .global__sidebar__inner')
+      const balanceBox = sidebarInner.querySelector(':scope > .right-bar-creators__balance-box')
+      const index = Array.from(sidebarInner.children).indexOf(balanceBox)
+      sidebarInner.insertBefore(box, sidebarInner.children.item(index + 1))
+    })
+    .catch(console.error)
+}
+
 const addGlobalEnrichments = function () {
   addEditProfileButton()
   addNewPostButton()
@@ -380,6 +482,7 @@ const globalContainerObserverCallback = function () {
 }
 
 const bodyObserverCallback = function () {
+  addOnlineUsersRightBar()
 
   const modalContainer = document.querySelector('modal-container')
   if (modalContainer) {

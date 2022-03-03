@@ -167,3 +167,22 @@ bs-dropdown-container .dropdown-menu {
 .change-account-selector_list__inner:hover > .change-account-selector_list-item > .plus-account-logout > .btn > .plus-account-logout-icon {
     visibility: visible;
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+#plus-online-users-list::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+#plus-online-users-list  {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.plus-message-link {
+    color: #6c757d;
+}
+
+.plus-message-link:hover {
+    color: white;
+}
