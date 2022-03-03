@@ -2,7 +2,7 @@
 
 [![Web Store Release](https://github.com/iPaulPro/BitCloutPlus/actions/workflows/release.yml/badge.svg)](https://github.com/iPaulPro/BitCloutPlus/actions/workflows/release.yml)
 
-Chrome / Brave extension to enhance bitclout.com pages
+Chrome / Brave extension to enhance bitclout.com and node.deso.org pages
 
 <a href="https://get.bitclout.plus"><img src="https://storage.googleapis.com/chrome-gcs-uploader.appspot.com/image/WlD8wC6g8khYWPJUsQceQkhXSlv1/UV4C4ybeBTsZt43U4xis.png"></a>
 
@@ -24,7 +24,7 @@ Enable [developer mode](https://developer.chrome.com/docs/extensions/mv2/faq/#fa
 
 #### Step 3
 
-Click "Load unpacked" and select the unzipped project directory.
+From the [Extensions](chrome://extensions/) page click "Load unpacked". Select the unzipped project folder.
 
 
 ## Credits
