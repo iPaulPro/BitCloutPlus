@@ -7,25 +7,32 @@ BitClout+ is a free, open source browser extension that enhances BitClout pages
 ## Features
 
 #### General
-- Changes 280 character limit to be 2000 on new posts
-- Username autocomplete
 - [Omnibox](https://developer.chrome.com/docs/extensions/reference/omnibox/) support: Use keyword "bc" and enter username
-- Adds "Edit Profile" button in sidebar
-- Adds "Create Post" button in sidebar
-- Adds "Your coin" value in sidebar
+- Browse as other users (CloutMask)
+- Adds "Edit Profile" button in left sidebar
+- Adds "Create Post" button in left sidebar
+- Adds "Your coin" value in right sidebar
+
+#### Posting
+- Changes 560 character limit to 15k on new posts
+- Username autocomplete
+- Edit posts and comments
+- Post extra data support
 
 ![General enhancments](assets/screenshots/bitclout-plus-autocomplete.gif)
 
 #### Profile
-- Adds follows you labels
+- Adds _follows you_ labels
 - Shows hodler label
 - Adds sell button
-- Shows coin price in BTCLT
+- Shows coin price in DESO
 - Shows number of holders
 - Shows percentage of coins held for each holder
 - Shows positional ranking of coin holders
 - Highlights you in coin holder lists
-- Adds "Send BitClout" profile menu items
+- Adds "Send DESO" profile menu items
+- Recently active indicator
+- Jumio verification indicator
 
 ![Profile enhancments](assets/screenshots/bitclout-plus-profile@2x.jpg)
 
@@ -38,6 +45,4 @@ BitClout+ is a free, open source browser extension that enhances BitClout pages
 
 Created by [paulburke](https://bitclout.com/u/paulburke)
 
-Icon by [charliehilton](https://bitclout.com/u/charliehilton)
-
-Dark mode CSS by [chapel](https://bitclout.com/u/lepahc)
+Icon by [charliehilton](https://bitclout.com/u/charlie)
