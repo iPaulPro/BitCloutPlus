@@ -4,7 +4,7 @@
   "version": "0.11.0",
   "manifest_version": 3,
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; frame-ancestors 'none';"
+    "extension_pages": "script-src 'self'; connect-src https://node.deso.org https://bitclout.com; object-src 'self'; frame-ancestors 'none';"
   },
   "author": "Paul Burke",
   "homepage_url": "https://github.com/iPaulPro/BitCloutPlus",
@@ -16,7 +16,7 @@
     "128": "images/icon_128.png"
   },
   "omnibox": {
-    "keyword": "bc"
+    "keyword": "deso"
   },
   "content_scripts": [
     {
