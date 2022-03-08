@@ -12,6 +12,8 @@ let identityWindow
 let longPostEnabled = true
 let observingHolders = false
 
+let notificationsJwtMsgId
+
 const dollarFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD'
@@ -195,6 +197,9 @@ const markNotificationsRead = (jwt) => {
       const countElement = document.getElementById('plus-notifications-count')
       if (countElement) countElement.remove()
     })
+    .finally(() => {
+      notificationsJwtMsgId = null
+    })
 }
 
 const extractTransactors = (block) => {
@@ -347,53 +352,9 @@ const updateUserCreatorCoinPrice = function () {
   }).catch(() => {})
 }
 
-const addFollowsYouBadgeToFollowingItems = (nodes, followerUsernames) => {
-  nodes.forEach(node => {
-    const buyLink = node.querySelector('.feed-post__coin-price-holder')
-    if (!buyLink) return
-
-    const username = buyLink.parentElement.firstElementChild.innerText.trim()
-    if (followerUsernames.indexOf(username) < 0) return
-
-    const followsYouSpan = createFollowsYouBadge()
-    buyLink.parentElement.insertBefore(followsYouSpan, buyLink.parentElement.lastElementChild)
-  })
-}
-
-const observeFollowingList = (page) => {
-  const loggedInPublicKey = getLoggedInPublicKey()
-  if (!loggedInPublicKey) return
-
-  const getFilteredSidNodes = (nodes) => Array.from(nodes).filter(node => node.dataset && node.dataset.sid)
-
-  getFollowersByPublicKey(loggedInPublicKey).then(res => res['PublicKeyToProfileEntry']).then(followersMap => {
-    const listDiv = page.querySelector('[ui-scroll]')
-    if (!listDiv) return
-
-    const followerValues = Object.values(followersMap)
-    const followerUsernames = followerValues.map(follower => follower ? follower['Username'] : "")
-
-    // Add to existing list items
-    const nodes = getFilteredSidNodes(listDiv.childNodes)
-    addFollowsYouBadgeToFollowingItems(nodes, followerUsernames)
-
-    // Listen for new list items
-    const observerConfig = { childList: true, subtree: false }
-    const observer = new MutationObserver(mutations => {
-      mutations.forEach(mutation => {
-        const nodes = getFilteredSidNodes(mutation.addedNodes)
-        addFollowsYouBadgeToFollowingItems(nodes, followerUsernames)
-      })
-    })
-    observer.observe(listDiv, observerConfig)
-  })
-}
-
-const getJwt = () => {
+const getJwt = (id) => {
   const identity = getCurrentIdentity()
   if (!identity) return
-
-  pendingIdentityMessageId = uuid()
 
   const payload = {
     accessLevel: identity.accessLevel,
@@ -401,7 +362,7 @@ const getJwt = () => {
     encryptedSeedHex: identity.encryptedSeedHex
   }
 
-  postIdentityMessage(pendingIdentityMessageId, 'jwt', payload)
+  postIdentityMessage(id, 'jwt', payload)
 }
 
 const addLogoutButtons = () => {
@@ -448,7 +409,8 @@ const globalContainerObserverCallback = function () {
   if (!notifications) {
     checkForNotifications()
   } else {
-    getJwt()
+    notificationsJwtMsgId = uuid()
+    getJwt(notificationsJwtMsgId)
   }
 
   const profilePage = document.querySelector('creator-profile-page')
@@ -463,9 +425,14 @@ const globalContainerObserverCallback = function () {
     return
   }
 
-  const following = document.querySelector('manage-follows')
-  if (following) {
-    observeFollowingList(following)
+  const follows = document.querySelector('manage-follows')
+  if (follows) {
+    observeFollowLists(follows)
+    addBlockedUsersTabToFollows(follows)
+
+    if (isBlockedUsersUrl()) {
+      addBlockedUsersList(follows)
+    }
     return
   }
 
@@ -554,19 +521,27 @@ const handleMessage = (message) => {
 
   if (method === 'login') {
    handleLogin(payload)
- } else if (id === pendingIdentityMessageId && payload) {
-   if (payload['encryptedMessage']) {
-     const encryptedMessage = payload['encryptedMessage']
-     if (encryptedMessage) onNftTransferUnlockableEncrypted(encryptedMessage)
-   } else if (payload['decryptedHexes']) {
-     const unlockableText = Object.values(payload['decryptedHexes'])[0]
-     if (unlockableText) onNftTransferUnlockableDecrypted(unlockableText)
-   } else if (payload['jwt']) {
-     markNotificationsRead(payload['jwt'])
-   } else {
-     handleSignTransactionResponse(payload)
-   }
-    pendingIdentityMessageId = null
+  } else if (payload) {
+    const jwt = payload['jwt']
+    if (jwt) {
+      if (id === notificationsJwtMsgId) {
+        markNotificationsRead(jwt)
+      } else if (id === blockJwtMsgId) {
+        blockUser(jwt)
+      }
+    }
+    else if (id === pendingIdentityMessageId && payload) {
+      if (payload['encryptedMessage']) {
+        const encryptedMessage = payload['encryptedMessage']
+        if (encryptedMessage) onNftTransferUnlockableEncrypted(encryptedMessage)
+      } else if (payload['decryptedHexes']) {
+        const unlockableText = Object.values(payload['decryptedHexes'])[0]
+        if (unlockableText) onNftTransferUnlockableDecrypted(unlockableText)
+      } else {
+        handleSignTransactionResponse(payload)
+      }
+      pendingIdentityMessageId = null
+    }
   }
 }
 

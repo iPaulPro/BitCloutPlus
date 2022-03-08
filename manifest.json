@@ -35,6 +35,7 @@
         "lib/nft.js",
         "lib/post.js",
         "lib/profile.js",
+        "lib/follow.js",
         "lib/cloutmask.js",
         "main.js"
       ],
