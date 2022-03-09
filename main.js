@@ -203,13 +203,29 @@ const markNotificationsRead = (jwt) => {
 }
 
 const extractTransactors = (block) => {
-  const transactors = []
+  const transactors = new Set()
   const transactions = block['Transactions']
   transactions.forEach(transaction => {
     const transactor = transaction['TransactionMetadata']['TransactorPublicKeyBase58Check']
-    transactors.push(transactor)
+    transactors.add(transactor)
   })
-  return transactors
+  return [...transactors]
+}
+
+const getMempoolTransactors = () => new Promise((resolve, reject) =>
+  chrome.runtime.sendMessage({type: 'get-mempool-transactors'}, response => {
+    if (response.mempoolTransactors) {
+      resolve(response.mempoolTransactors)
+    } else {
+      reject(chrome.runtime.lastError)
+    }
+  })
+)
+
+const addMempoolTransactors = (transactors) => {
+  return getMempoolTransactors()
+    .then(mempoolTransactors => transactors.concat(mempoolTransactors))
+    .catch(() => transactors)
 }
 
 const findFollowingInTransactors = (transactors) => {
@@ -227,6 +243,7 @@ const getOnlineFollowing = () =>
     .then(appState => appState['BlockHeight'])
     .then(getBlockByHeight)
     .then(extractTransactors)
+    .then(addMempoolTransactors)
     .then(findFollowingInTransactors)
 
 const addOnlineUsersRightBar = () => {
