@@ -1,7 +1,7 @@
 {
   "name": "BitClout Plus",
   "description": "BitClout on steroids",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "manifest_version": 3,
   "content_security_policy": {
     "extension_pages": "script-src 'self'; connect-src https://node.deso.org https://bitclout.com; object-src 'self'; frame-ancestors 'none';"
