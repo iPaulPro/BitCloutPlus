@@ -13,22 +13,7 @@ const KEY_LATEST_MEMPOOL_USERS = 'latest-mempool-users'
 
 const MSG_GET_MEMPOOL_TRANSACTORS = 'get-mempool-transactors'
 
-const getUsernameForPublicKey = (publicKey) => {
-  if (!publicKey) return Promise.reject('Missing required parameter publicKey')
-
-  return fetch(`https://node.deso.org/api/v0/get-user-name-for-public-key/${publicKey}`)
-    .then(res => res.json())
-    .then(atob)
-}
-
-const isPublicKeyBase58Check = (query) => {
-  return query.startsWith(PUBLIC_KEY_PREFIX) && query.length === PUBLIC_KEY_LENGTH
-}
-
-const openUserInTab = async (username) => {
-  const newURL = 'https://node.deso.org/u/' + username
-  await chrome.tabs.create({url: newURL})
-}
+// Omnibox
 
 chrome.omnibox.onInputEntered.addListener(async text => {
   // Encode user input for special characters , / ? : @ & = + $ #
@@ -51,6 +36,60 @@ chrome.omnibox.onInputEntered.addListener(async text => {
 
   await openUserInTab(query)
 })
+
+const isPublicKeyBase58Check = (query) => {
+  return query.startsWith(PUBLIC_KEY_PREFIX) && query.length === PUBLIC_KEY_LENGTH
+}
+
+const getUsernameForPublicKey = (publicKey) => {
+  if (!publicKey) return Promise.reject('Missing required parameter publicKey')
+
+  return fetch(`https://node.deso.org/api/v0/get-user-name-for-public-key/${publicKey}`)
+    .then(res => res.json())
+    .then(atob)
+}
+
+const openUserInTab = async (username) => {
+  const newURL = 'https://node.deso.org/u/' + username
+  await chrome.tabs.create({url: newURL})
+}
+
+// Worker thread
+
+chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
+  switch (message.type) {
+    case MSG_GET_MEMPOOL_TRANSACTORS:
+      getMempoolTransactors()
+        .then(mempoolTransactors => sendResponse({mempoolTransactors}))
+        .catch(() => sendResponse({mempoolTransactors: []}))
+  }
+
+  return true
+})
+
+const getMempoolTransactors = async () => {
+  const savedTransactors = await getSavedMempoolTransactors()
+  if (savedTransactors) return savedTransactors
+
+  const transactions = await getMempoolTransactions()
+  const transactors = extractTransactors(transactions)
+
+  await saveTransactors(transactors)
+
+  return transactors
+}
+
+const getSavedMempoolTransactors = async () => {
+  const savedItems = await chrome.storage.local.get([KEY_LATEST_MEMPOOL_CALL, KEY_LATEST_MEMPOOL_USERS])
+
+  const latestCall = savedItems[KEY_LATEST_MEMPOOL_CALL] ?? 0
+  if (Date.now() - latestCall < DELAY_MS_MEMPOOL_CALL) {
+    const savedUsers = savedItems[KEY_LATEST_MEMPOOL_USERS]
+    return JSON.parse(savedUsers)
+  }
+
+  return null
+}
 
 const getMempoolTransactions = () => {
   const request = {
@@ -77,34 +116,10 @@ const extractTransactors = (transactions) => {
   return [...transactors]
 }
 
-const getMempoolTransactors = async () => {
-  const savedItems = await chrome.storage.local.get([KEY_LATEST_MEMPOOL_CALL, KEY_LATEST_MEMPOOL_USERS])
-
-  // check if saved active list is fresh
-  const latestCall = savedItems[KEY_LATEST_MEMPOOL_CALL] ?? 0
-  if (Date.now() - latestCall < DELAY_MS_MEMPOOL_CALL) {
-    const savedUsers = savedItems[KEY_LATEST_MEMPOOL_USERS]
-    return JSON.parse(savedUsers)
-  }
-
-  const transactions = await getMempoolTransactions()
-  const transactors = extractTransactors(transactions)
-
+const saveTransactors = async (transactors) => {
   const items = {}
   items[KEY_LATEST_MEMPOOL_CALL] = Date.now()
   items[KEY_LATEST_MEMPOOL_USERS] = JSON.stringify(transactors)
+
   await chrome.storage.local.set(items)
-
-  return transactors
 }
-
-chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
-  switch (message.type) {
-    case MSG_GET_MEMPOOL_TRANSACTORS:
-      getMempoolTransactors()
-        .then(mempoolTransactors => sendResponse({mempoolTransactors}))
-        .catch(() => sendResponse({mempoolTransactors: []}))
-  }
-
-  return true
-})

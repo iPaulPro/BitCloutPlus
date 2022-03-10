@@ -246,6 +246,39 @@ const getOnlineFollowing = () =>
     .then(addMempoolTransactors)
     .then(findFollowingInTransactors)
 
+const createRecentlyActiveListItem = (user) => {
+  const username = user['Username']
+
+  const listItem = document.createElement('a')
+  listItem.className = 'link--unstyled d-flex align-items-center text-grey5 fs-15px py-2'
+  listItem.href = `/u/${username}`
+
+  const avatar = document.createElement('div')
+  avatar.className = 'right-bar-creators-leaderboard__creator-avatar'
+  avatar.style.backgroundImage = `url("https://node.deso.org/api/v0/get-single-profile-picture/${user['PublicKeyBase58Check']}?fallback=https://node.deso.org/assets/img/default_profile_pic.png")`
+
+  const text = document.createElement('span')
+  text.innerText = username
+
+  const textContainer = document.createElement('div')
+  textContainer.className = 'flex-grow-1'
+  textContainer.appendChild(text)
+
+  const messageIcon = document.createElement('i')
+  messageIcon.className = 'fas fa-envelope mr-2'
+
+  const messageLink = document.createElement('a')
+  messageLink.className = 'plus-message-link'
+  messageLink.href = `/inbox?username=${username}`
+  messageLink.appendChild(messageIcon)
+
+  listItem.appendChild(avatar)
+  listItem.appendChild(textContainer)
+  listItem.appendChild(messageLink)
+
+  return listItem
+}
+
 const addOnlineUsersRightBar = () => {
   const boxId = 'plus-online-users'
   if (document.getElementById(boxId)) return
@@ -256,38 +289,11 @@ const addOnlineUsersRightBar = () => {
   getOnlineFollowing()
     .then(onlineUsers => {
       const listItems = []
-      onlineUsers.sort((a, b) => a['Username'].localeCompare(b['Username'])).forEach(user => {
-        const username = user['Username']
-
-        const listItem = document.createElement('a')
-        listItem.className = 'link--unstyled d-flex align-items-center text-grey5 fs-15px py-2'
-        listItem.href = `/u/${username}`
-
-        const avatar = document.createElement('div')
-        avatar.className = 'right-bar-creators-leaderboard__creator-avatar'
-        avatar.style.backgroundImage = `url("https://node.deso.org/api/v0/get-single-profile-picture/${user['PublicKeyBase58Check']}?fallback=https://node.deso.org/assets/img/default_profile_pic.png")`
-
-        const text = document.createElement('span')
-        text.innerText = username
-
-        const textContainer = document.createElement('div')
-        textContainer.className = 'flex-grow-1'
-        textContainer.appendChild(text)
-
-        const messageIcon = document.createElement('i')
-        messageIcon.className = 'fas fa-envelope mr-2'
-
-        const messageLink = document.createElement('a')
-        messageLink.className = 'plus-message-link'
-        messageLink.href = `/inbox?username=${username}`
-        messageLink.appendChild(messageIcon)
-
-        listItem.appendChild(avatar)
-        listItem.appendChild(textContainer)
-        listItem.appendChild(messageLink)
-
-        listItems.push(listItem)
-      })
+      onlineUsers.sort((a, b) => a['Username'].localeCompare(b['Username']))
+        .forEach(user => {
+          const listItem = createRecentlyActiveListItem(user)
+          listItems.push(listItem)
+        })
 
       const list = document.createElement('div')
       list.id = 'plus-online-users-list'
