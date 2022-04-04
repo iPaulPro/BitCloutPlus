@@ -253,9 +253,10 @@ const createRecentlyActiveListItem = (user) => {
   listItem.className = 'link--unstyled d-flex align-items-center text-grey5 fs-15px py-2'
   listItem.href = `/u/${username}`
 
+  const profilePhotoUrl = getProfilePhotoUrlForPublicKey(user['PublicKeyBase58Check'])
   const avatar = document.createElement('div')
   avatar.className = 'right-bar-creators-leaderboard__creator-avatar'
-  avatar.style.backgroundImage = `url("https://node.deso.org/api/v0/get-single-profile-picture/${user['PublicKeyBase58Check']}?fallback=https://node.deso.org/assets/img/default_profile_pic.png")`
+  avatar.style.backgroundImage = `url("${profilePhotoUrl}")`
 
   const text = document.createElement('span')
   text.innerText = username
