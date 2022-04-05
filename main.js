@@ -289,6 +289,8 @@ const addOnlineUsersRightBar = () => {
 
   getOnlineFollowing()
     .then(onlineUsers => {
+      if (document.getElementById(boxId)) return
+
       const listItems = []
       onlineUsers.sort((a, b) => a['Username'].localeCompare(b['Username']))
         .forEach(user => {
@@ -499,7 +501,7 @@ const onTransactionSigned = (payload) => {
       const nftPostHash = metadata['NFTPostHash']
       if (nftPostHash) {
         if (new URL(window.location).pathname.includes('nft-transfers')) {
-          window.location.reload(false)
+          window.location.reload()
         } else {
           const postHashHex = Buffer.from(nftPostHash).toString('hex')
           window.location.href = `/nft/${postHashHex}`
@@ -574,7 +576,7 @@ const init = function () {
 
   chrome.storage.local.get(['longPost'], items => {
     if (items.longPost === undefined) {
-      chrome.storage.local.set({ longPost: true })
+      chrome.storage.local.set({ longPost: true }).catch()
     } else {
       longPostEnabled = items.longPost
     }
